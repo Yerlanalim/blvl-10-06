@@ -1,0 +1,201 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are Claude 4 Sonnet with 120k context window, developing BizLevel educational platform by adapting existing SaaS template. You work in single-developer mode with atomic commits.
+
+## CRITICAL: Maximum Code Reuse
+
+### ALWAYS reuse from template:
+- **100% reuse**: Authentication system (login, register, MFA, social auth)
+- **100% reuse**: User profiles structure (extend, don't replace)
+- **100% reuse**: Supabase configuration and clients
+- **100% reuse**: UI components from shadcn/ui
+- **100% reuse**: Layout structure (AppLayout, navigation)
+- **100% reuse**: Error handling patterns (ErrorBoundary, toast)
+- **100% reuse**: Loading states and spinners
+
+### Adaptation strategy:
+- **File Management** → Rename to "Artifacts" (keep all functionality)
+- **Task Management** → Hide from navigation (keep code for future)
+- **User Settings** → Extend with learning preferences
+- **Storage** → Adapt for lesson materials
+- **Table component** → Reuse for admin content management
+
+### NEVER create from scratch:
+- ❌ New auth flows (use existing auth/)
+- ❌ New layout system (use AppLayout)
+- ❌ New UI primitives (use components/ui/)
+- ❌ New modal/dialog patterns (use existing)
+- ❌ New form handling (use existing patterns)
+- ❌ New Supabase clients (use lib/supabase/)
+
+## Project Context
+
+BizLevel adapts SaaS template for education:
+- 10 sequential business levels
+- Text → Video → Test → Artifact flow
+- AI assistant "Leo" with minimal context
+- Free tier: 3 levels, 30 AI messages total
+- Paid tier: 10 levels, 30 AI messages/day
+
+## File Organization Rules
+
+### When creating new features:
+1. Check if similar exists in template
+2. Extend existing component/hook/utility
+3. Place in existing folder structure
+4. Only create new file if absolutely unique
+
+### Naming conventions:
+- **Pages**: app/(app)/feature-name/page.tsx
+- **Components**: components/feature/ComponentName.tsx
+- **Hooks**: lib/hooks/useFeatureName.ts
+- **Database**: snake_case for tables/columns
+- **Keep template naming** for existing features
+
+## Database Operations
+
+### Use Supabase MCP for:
+- Creating new tables (levels, lesson_steps, user_progress)
+- Adding columns to existing tables
+- Creating RLS policies
+- Generating TypeScript types
+
+### SQL conventions:
+- Extend existing tables when possible
+- user_profiles: ADD columns, don't create new user table
+- Keep existing RLS patterns
+- Use transactions for progress updates
+
+## State Management Hierarchy
+
+1. **URL state** (current lesson step)
+2. **Supabase** (all persistent data)
+3. **React Query** (caching, already configured)
+4. **Local state** (UI only, temporary)
+
+### AVOID:
+- Custom state management
+- Local storage for critical data
+- Complex client state
+- Prop drilling (use existing contexts)
+
+## Task Execution Rules
+
+### Before starting any task:
+1. Read existing similar code in template
+2. Identify reusable components
+3. Plan minimal changes needed
+4. List all files that will be modified
+
+### During development:
+- Make atomic changes (max 10-15 files)
+- Test each change immediately
+- Keep existing functionality working
+- Update status.md with 7-10 lines summary
+
+### After completing task:
+- Run existing tests
+- Verify no regression
+- Commit with conventional message
+- Document in status.md
+
+## Component Development
+
+### Creating new components:
+1. Find similar in template
+2. Copy and adapt
+3. Keep same structure/patterns
+4. Reuse existing styles
+
+### Modifying existing:
+- Extend through props
+- Use composition
+- Keep backward compatibility
+- Document changes
+
+## AI Integration Specifics
+
+### Vertex AI implementation:
+- Use Vercel AI SDK (already in template)
+- Simple context: {level, step, tier}
+- Implement rate limiting in API route
+- Store message count in user_profiles
+
+### Avoid complexity:
+- No complex context building
+- No conversation memory beyond session
+- Simple request/response pattern
+
+## Testing Requirements
+
+### For each stage:
+- Unit tests for new utilities
+- Integration tests for API routes
+- E2E tests for critical user flows
+- Keep existing tests passing
+
+### Test patterns:
+- Use existing test setup
+- Follow template's test structure
+- Focus on user journeys
+- Test data uses Supabase migrations
+
+## Common Pitfalls to Avoid
+
+### DON'T:
+- Rewrite working template code
+- Create parallel authentication
+- Build new navigation system
+- Implement custom form validation
+- Design new loading patterns
+
+### DO:
+- Study template patterns first
+- Extend existing functionality
+- Maintain consistency
+- Use template's error handling
+- Follow established conventions
+
+## Logging Protocol
+
+After EVERY task completion, update docs/status.md:
+```
+## [Date] - [Task Name]
+- Files modified: [list]
+- Features added: [brief description]
+- Tests written: [count and type]
+- Issues found: [if any]
+- Next steps: [what's needed]
+- Time spent: [hours]
+- Commit hash: [git commit hash]
+```
+
+## Performance Considerations
+
+- Lazy load heavy components (already configured)
+- Use React Query for all data fetching
+- Keep existing optimization patterns
+- Don't add new performance libraries
+
+## Security Rules
+
+- Keep existing RLS policies
+- Extend, don't replace auth checks
+- Use existing validation patterns
+- Follow template's security model
+
+## Git Workflow
+
+- Atomic commits after each micro-task
+- Conventional commit format
+- Branch naming: feature/task-name
+- Push after testing passes
+
+- Всегда проверяй существующие компоненты перед созданием новых
+- Используй Supabase MCP для всех операций с БД
+- Документируй изменения в status.md
+
+Remember: The template already solved most problems. Your job is to adapt intelligently, not recreate. When in doubt, check how template does it.
