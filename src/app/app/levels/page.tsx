@@ -18,7 +18,6 @@ export default function LevelsPage() {
   
   const { 
     userProgress, 
-    progressData, 
     loading: progressLoading, 
     error: progressError 
   } = useUserProgress(user?.id);
@@ -136,7 +135,7 @@ export default function LevelsPage() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You're on the free plan with access to the first 3 levels. 
+            You&apos;re on the free plan with access to the first 3 levels. 
             <a href="/app/user-settings" className="ml-1 text-primary-600 hover:underline">
               Upgrade to unlock all 10 levels
             </a>
@@ -161,7 +160,15 @@ export default function LevelsPage() {
                 completedLevels: userProgress.completedLevels,
                 tierType: userProgress.tierType
               } : undefined}
-              progressData={progressData}
+              progressData={userProgress?.progressByLevel ? 
+                Object.fromEntries(
+                  Object.entries(userProgress.progressByLevel).map(([levelId, progress]) => [
+                    levelId, 
+                    progress.percentage
+                  ])
+                ) : {}
+              }
+              progressDetails={userProgress?.progressByLevel || {}}
             />
           </CardContent>
         </Card>

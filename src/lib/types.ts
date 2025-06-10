@@ -341,3 +341,26 @@ export interface LessonStepWithQuestions extends LessonStep {
 export interface UserProgressWithLevel extends UserProgress {
   level: Level
 }
+
+// Helper types for progress tracking
+export interface LevelProgressDetails {
+  current_step: number;
+  total_steps: number;
+  percentage: number;
+}
+
+export interface UserProgressResult {
+  currentLevel: number;
+  completedLevels: number[];
+  tierType: TierType;
+  aiMessagesCount: number;
+  profile: UserProfile | null;
+  progressByLevel: Record<number, LevelProgressDetails>;
+}
+
+export interface LevelAccessResult {
+  canAccess: boolean;
+  isLocked: boolean;
+  reason?: string;
+  level?: Level;
+}

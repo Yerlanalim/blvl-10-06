@@ -2,7 +2,7 @@
 
 import React from 'react';
 import LevelCard from './LevelCard';
-import { Tables } from '@/lib/types';
+import { Tables, LevelProgressDetails } from '@/lib/types';
 
 interface LevelGridProps {
   levels: Tables<'levels'>[];
@@ -12,9 +12,10 @@ interface LevelGridProps {
     tierType: 'free' | 'paid';
   };
   progressData?: Record<number, number>; // levelId -> progress percentage
+  progressDetails?: Record<number, LevelProgressDetails>;
 }
 
-export default function LevelGrid({ levels, userProgress, progressData = {} }: LevelGridProps) {
+export default function LevelGrid({ levels, userProgress, progressData = {}, progressDetails = {} }: LevelGridProps) {
   const getLevelState = (level: Tables<'levels'>) => {
     if (!userProgress) {
       return { isLocked: true, isCompleted: false, progress: 0 };
@@ -46,6 +47,7 @@ export default function LevelGrid({ levels, userProgress, progressData = {} }: L
         .sort((a, b) => a.order_index - b.order_index)
         .map((level) => {
           const { isLocked, isCompleted, progress } = getLevelState(level);
+          const details = progressDetails[level.id];
           
           return (
             <LevelCard
@@ -54,6 +56,10 @@ export default function LevelGrid({ levels, userProgress, progressData = {} }: L
               isLocked={isLocked}
               isCompleted={isCompleted}
               progress={progress}
+              progressDetails={details && details.total_steps > 0 ? {
+                currentStep: details.current_step,
+                totalSteps: details.total_steps
+              } : undefined}
             />
           );
         })}

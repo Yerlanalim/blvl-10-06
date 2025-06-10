@@ -56,3 +56,19 @@
 - Решения: Созданы RLS политики для всех таблиц, добавлен trigger для автоматического создания профилей, упрощен хук useUserProgress
 - Проверки: TypeScript компилируется без ошибок, миграции применены успешно, запись пользователя создана
 - Результат: Система уровней готова - отображает карту 10 уровней, поддерживает free/paid тарифы, интегрирована с Supabase
+
+## [2025-01-16] - Task 2.2: User Progress Tracking ✅
+- Файлы созданы: useLevelAccess.ts; Измененные файлы: useUserProgress.ts, LevelCard.tsx, LevelGrid.tsx, types.ts, levels/page.tsx
+- Что сделано: Реализовано детальное отслеживание прогресса - создан хук useLevelAccess для проверки доступа к уровням с учетом tier и прогресса, обновлен useUserProgress для работы с user_progress таблицей и realtime подписками, добавлена визуализация "2/3 steps" в LevelCard
+- Проблемы: ESLint ошибки с missing dependencies в useEffect, блокировка hoisting для useCallback функций
+- Решения: Применен useCallback для мемоизации функций, исправлен порядок объявления для предотвращения hoisting issues, добавлены helper типы LevelProgressDetails, UserProgressResult, LevelAccessResult
+- Проверки: Успешная компиляция TypeScript без критических ошибок, только warnings от других файлов проекта
+- Результат: Полноценное отслеживание прогресса готово - realtime обновления, детальная визуализация прогресса, контроль доступа
+
+## [2025-01-16] - Task 2.3: Lesson Container Setup ✅
+- Файлы созданы: src/app/app/lesson/[id]/page.tsx, LessonContainer.tsx, StepIndicator.tsx, NavigationButtons.tsx, TextContent.tsx, VideoPlayer.tsx, TestWidget.tsx, CompletionScreen.tsx
+- Что сделано: Создана полная структура для прохождения уроков - динамическая страница lesson/[id] с Next.js 15 async params, LessonContainer управляет состоянием и URL через searchParams (?step=1), StepIndicator показывает прогресс шагов, NavigationButtons с блокировкой "Next" до завершения шага
+- Проблемы: ESLint ошибки с неиспользуемыми imports и missing dependencies в useEffect, TypeScript ошибка компиляции
+- Решения: Убран неиспользуемый импорт Tables, добавлены eslint-disable комментарии для useEffect dependencies, исправлены TypeScript типы
+- Особенности: Сохранение прогресса в user_progress при каждом шаге, автоматическое обновление user_profiles при завершении уровня, управление состоянием через URL
+- Результат: Основная структура урока готова - навигация между шагами, сохранение прогресса, интеграция с Supabase, готова для Task 2.4

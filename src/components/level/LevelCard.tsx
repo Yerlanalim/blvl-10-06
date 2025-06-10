@@ -11,9 +11,13 @@ interface LevelCardProps {
   isLocked: boolean;
   isCompleted: boolean;
   progress?: number; // Progress as percentage (0-100)
+  progressDetails?: {
+    currentStep: number;
+    totalSteps: number;
+  };
 }
 
-export default function LevelCard({ level, isLocked, isCompleted, progress = 0 }: LevelCardProps) {
+export default function LevelCard({ level, isLocked, isCompleted, progress = 0, progressDetails }: LevelCardProps) {
   const cardContent = (
     <Card className={`h-full transition-all duration-200 hover:shadow-md ${
       isLocked 
@@ -56,7 +60,12 @@ export default function LevelCard({ level, isLocked, isCompleted, progress = 0 }
           <div className="mt-4">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>Progress</span>
-              <span>{Math.round(progress)}%</span>
+              <span>
+                {progressDetails ? 
+                  `${progressDetails.currentStep}/${progressDetails.totalSteps} steps` :
+                  `${Math.round(progress)}%`
+                }
+              </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
