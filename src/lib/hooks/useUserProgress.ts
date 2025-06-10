@@ -12,13 +12,6 @@ interface UserProgress {
   profile: Tables<'user_profiles'> | null;
 }
 
-interface ProgressData {
-  levelId: number;
-  progress: number; // percentage
-  stepsCompleted: number;
-  totalSteps: number;
-}
-
 export function useUserProgress(userId?: string) {
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [progressData, setProgressData] = useState<Record<number, number>>({});
@@ -62,43 +55,7 @@ export function useUserProgress(userId?: string) {
         throw new Error('User profile not found');
       }
 
-      // Get detailed progress for each level
-      const { data: progressRows, error: progressError } = await supabase
-        .from('user_progress')
-        .select(`
-          level_id,
-          current_step,
-          completed_at,
-          level:levels!inner(
-            id,
-            title
-          )
-        `)
-        .eq('user_id', userId);
-
-      if (progressError) {
-        console.error('Error loading progress details:', progressError);
-        // Don't throw here, we can still show basic progress
-      }
-
-      // Calculate progress percentages
-      const progressMap: Record<number, number> = {};
-      
-      if (progressRows) {
-        for (const row of progressRows) {
-          // Get total steps for this level
-          const { data: stepsCount } = await supabase
-            .from('lesson_steps')
-            .select('id')
-            .eq('level_id', row.level_id);
-          
-          const totalSteps = stepsCount?.length || 3; // Default to 3 steps
-          const completedSteps = row.completed_at ? totalSteps : row.current_step;
-          
-          progressMap[row.level_id] = Math.round((completedSteps / totalSteps) * 100);
-        }
-      }
-
+      // For now, just use basic profile data without complex progress calculation
       setUserProgress({
         currentLevel: profile.current_level,
         completedLevels: profile.completed_lessons || [],
@@ -106,6 +63,14 @@ export function useUserProgress(userId?: string) {
         aiMessagesCount: profile.ai_messages_count,
         profile
       });
+      
+      // Simple progress calculation - if level is in completed_lessons, it's 100%, otherwise 0%
+      const progressMap: Record<number, number> = {};
+      if (profile.completed_lessons) {
+        profile.completed_lessons.forEach(levelId => {
+          progressMap[levelId] = 100;
+        });
+      }
       
       setProgressData(progressMap);
       
