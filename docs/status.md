@@ -3,7 +3,7 @@
 ## [2025-01-16] - Task 1.1: Environment Setup ✅
 - Измененные файлы: package.json, README.md
 - Что сделано: Обновлен name на "bizlevel", description на образовательную тематику, создан подробный README
-- Проверки: .env файл корректен (NEXT_PUBLIC_PRODUCTNAME=bizlevel), проект запускается без ошибок
+- Проверки: .env.local файл корректен (NEXT_PUBLIC_PRODUCTNAME=bizlevel), проект запускается без ошибок
 - Аутентификация: Протестирована доступность главной страницы (200) и страницы регистрации (200)
 - Компиляция: Успешная компиляция за 927ms, нет критических ошибок в консоли
 - Результат: Проект успешно трансформирован в BizLevel с сохранением всей функциональности
@@ -165,9 +165,9 @@
 
 ## [2025-01-16] - Environment Configuration Fix ⚠️
 - Проблема: Конфликт между .env и .env.local в Next.js 15 - AI переменные не загружались
-- Решение: Перенесены AI переменные из .env в .env.local (GEMINI_API_KEY, GEMINI_MODEL_NAME, etc.)  Следует перенести остальные переменные из .env в .env.local и проверить места, где используется .env.
+- Решение: Все переменные окружения перенесены в .env.local, файл .env удален для соблюдения Next.js 15 best practices
 - Статус: Chat UI работает, но API ключ невалидный - требуется правильный Gemini API key от Google AI Studio
-- Важно: Все новые переменные окружения должны добавляться в .env.local, не в .env (Next.js 15 приоритет)
+- Важно: Все переменные окружения теперь в .env.local (Next.js 15 требование), .env файл удален
 
 ## [2025-01-16] - Task 4.5: Context Integration ✅
 - Файлы изменены: src/lib/ai/context.ts, src/lib/ai/index.ts
@@ -183,7 +183,7 @@
 - Файлы изменены: src/lib/ai/index.ts, src/app/api/chat/route.ts, .env.local, package.json
 - Что сделано: Полная миграция с Gemini API на Vertex AI согласно изначальному плану stage4-tasks.md - удален @google/genai SDK, установлен @google-cloud/vertexai, создан vertex.ts с Service Account аутентификацией, обновлены все импорты и экспорты
 - Проблемы решены: TypeScript ошибки с HarmCategory и HarmBlockThreshold (добавлены правильные импорты), компиляция проходит успешно без критических ошибок
-- Конфигурация: Используются переменные VERTEX_AI_PROJECT_ID=blvleo, VERTEX_AI_LOCATION=us-central1, VERTEX_AI_MODEL=bizlevel_finetune, service account credentials/blvleo-67ad3ec2e2fe.json
+- Конфигурация: Используются переменные VERTEX_AI_PROJECT_ID=blvleo, VERTEX_AI_LOCATION=us-central1, VERTEX_AI_MODEL=bizlevel_finetune, service account данные в переменных окружения
 - Результат: AI система полностью мигрирована на Vertex AI - ready для тестирования через dev сервер, все функции (streaming, rate limiting, context) сохранены
 - Исправления: bizlevel_finetune → gemini-1.5-flash → gemini-2.0-flash-001 (финальная миграция на новейшую стабильную модель)
 - Финальная модель: gemini-2.0-flash-001 (Gemini 2.0 Flash - production ready), API протестирован и работает
@@ -195,4 +195,21 @@
 - Оптимизации: useCallback уже применены во всех компонентах, useMemo для quota calculations, проверены window checks (отсутствуют SSR проблемы), context caching оптимален (5min TTL)
 - Проверки: Успешная компиляция без критических ошибок, только warning в MFASetup.tsx, все тестовые utilities готовы, performance benchmarks определены
 - Результат: AI интеграция полностью протестирована и задокументирована - готова к production, comprehensive test coverage, performance optimized
+
+## [2025-01-16] - Environment Files Migration ✅
+- Файлы изменены: .env.local, .gitignore, docs/status.md, docs/stage1-tasks.md, docs/stage4-tasks.md
+- Файлы удалены: .env
+- Что сделано: Полная миграция с .env на .env.local согласно Next.js 15 best practices - объединены все переменные окружения в единый .env.local файл, удален старый .env файл, обновлена документация во всех md файлах
+- Переменные: Все 16 переменных окружения (Supabase, Product Config, Analytics, Pricing, AI Vertex) перенесены в .env.local
+- Проверки: Успешная компиляция (npm run build), Next.js корректно загружает .env.local, только 1 warning в MFASetup.tsx
+- .gitignore: Очищен от дублированной строки .env, .env* покрывает все env файлы
+- Результат: Конфигурация окружения полностью соответствует Next.js 15 требованиям - единый .env.local файл, корректная загрузка переменных
+
+## [2025-01-16] - Credentials Migration to Environment Variables ✅
+- Файлы изменены: .env.local, src/lib/ai/vertex.ts
+- Файлы удалены: credentials/blvleo-67ad3ec2e2fe.json, папка credentials/
+- Что сделано: Миграция Google Cloud Service Account с JSON файла на переменные окружения - извлечены все данные из JSON файла (client_email, private_key, private_key_id, client_id, project_id) в .env.local, обновлен vertex.ts для использования googleAuthOptions с credentials object
+- Безопасность: Устранен отдельный файл с закрытыми данными, все credentials теперь в .env.local который игнорируется git
+- Проверки: Двойная компиляция (до и после удаления JSON), успешная сборка, Vertex AI SDK корректно инициализируется с environment credentials
+- Результат: Service Account аутентификация работает через переменные окружения без JSON файла - более безопасно и соответствует современным практикам
 

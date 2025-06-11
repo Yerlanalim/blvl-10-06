@@ -16,11 +16,22 @@ if (!projectId) {
   throw new Error('VERTEX_AI_PROJECT_ID is required in environment variables')
 }
 
-// Initialize Vertex AI client with Service Account
+// Initialize Vertex AI client with Service Account from environment variables
 const vertexAI = new VertexAI({
   project: projectId,
   location: location,
-  // Service account credentials will be loaded from GOOGLE_APPLICATION_CREDENTIALS
+  // Use environment variables instead of JSON file for credentials
+  googleAuthOptions: {
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
+      client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
+      type: 'service_account',
+      project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    }
+  }
 })
 
 /**

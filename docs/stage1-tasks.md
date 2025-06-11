@@ -6,7 +6,7 @@
 
 **Связанные файлы**:
 - package.json
-- .env
+- .env.local
 - README.md
 
 **Команды для агента Cursor**:
@@ -15,7 +15,7 @@
    - description: "Educational platform with 10 business levels"
    - author: обнови на актуальную информацию
 2. НЕ УДАЛЯЙ никакие зависимости, только добавь если потребуется позже
-3. Открой .env и убедись что:
+3. Открой .env.local и убедись что:
    - NEXT_PUBLIC_PRODUCTNAME=bizlevel
    - Убедись что все Supabase переменные на месте и работают
 4. Проверь что проект запускается командой npm run dev
