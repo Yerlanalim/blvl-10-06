@@ -11,7 +11,7 @@ import VideoPlayer from './VideoPlayer';
 import TestWidget from './TestWidget';
 import CompletionScreen from './CompletionScreen';
 import { createSPASassClient } from '@/lib/supabase/client';
-import { Tables, LessonStepWithQuestions, StepType } from '@/lib/types';
+import { Tables, LessonStepWithQuestions, StepType, ArtifactTemplate } from '@/lib/types';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 interface LessonContainerProps {
@@ -33,11 +33,13 @@ export default function LessonContainer({
   const [error, setError] = useState<string | null>(null);
   const [stepProgress, setStepProgress] = useState<Record<number, boolean>>({});
   const [isCompleted, setIsCompleted] = useState(false);
+  const [artifactTemplate, setArtifactTemplate] = useState<ArtifactTemplate | null>(null);
 
-  // Load existing progress
+  // Load existing progress and artifact template
   useEffect(() => {
     if (level?.id && userId) {
       loadStepProgress();
+      loadArtifactTemplate();
     }
   }, [level?.id, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -69,6 +71,28 @@ export default function LessonContainer({
       
     } catch (err) {
       console.error('Error loading step progress:', err);
+    }
+  };
+
+  const loadArtifactTemplate = async () => {
+    try {
+      const sassClient = await createSPASassClient();
+      const supabase = sassClient.getSupabaseClient();
+      
+      const { data: template, error: templateError } = await supabase
+        .from('artifact_templates')
+        .select('*')
+        .eq('level_id', level.id)
+        .single();
+
+      if (templateError && templateError.code !== 'PGRST116') {
+        throw templateError;
+      }
+
+      setArtifactTemplate(template);
+      
+    } catch (err) {
+      console.error('Error loading artifact template:', err);
     }
   };
 
@@ -177,6 +201,8 @@ export default function LessonContainer({
       return (
         <CompletionScreen 
           level={level}
+          userId={userId}
+          artifactTemplate={artifactTemplate}
           onContinue={handleLevelComplete}
         />
       );

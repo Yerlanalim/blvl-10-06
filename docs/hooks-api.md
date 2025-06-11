@@ -2,123 +2,167 @@
 
 ## useUserProgress
 
-Хук для отслеживания прогресса пользователя по всем уровням.
+Hook for tracking user progress through levels and lessons.
 
 ### Usage
 ```typescript
-const { userProgress, loading, error, refreshProgress } = useUserProgress(userId);
+const { progressData, loading, error, refreshProgress } = useUserProgress(userId);
+```
+
+### Returns
+- `progressData`: Current progress information
+- `loading`: Boolean loading state
+- `error`: Error message if any
+- `refreshProgress`: Function to reload progress data
+
+### Optimizations
+- Uses single query with JOIN to avoid N+1 problems
+- Implements realtime subscriptions with unique channel names
+- Proper cleanup on unmount
+
+## useUserArtifacts
+
+Hook for managing user's unlocked learning materials artifacts.
+
+### Usage
+```typescript
+const { artifactsData, loading, error, refreshArtifacts } = useUserArtifacts(userId);
 ```
 
 ### Parameters
-- `userId` (string | undefined) - ID пользователя
+- `userId` (string, optional): User ID to fetch artifacts for
 
 ### Returns
-- `userProgress` (UserProgressResult | null) - Объект с прогрессом пользователя
-- `loading` (boolean) - Состояние загрузки
-- `error` (string | null) - Ошибка загрузки
-- `refreshProgress` (function) - Функция для обновления прогресса
+- `artifactsData`: Object containing:
+  - `artifacts`: Array of LevelArtifacts sorted by level order
+  - `artifactsByLevel`: Record mapping level ID to artifacts
+  - `totalCount`: Total number of unlocked artifacts
+- `loading`: Boolean indicating data fetching state
+- `error`: Error message string if fetch fails
+- `refreshArtifacts`: Function to manually reload artifacts
 
-### UserProgressResult Structure
+### Data Structure
 ```typescript
-interface UserProgressResult {
-  currentLevel: number;           // Текущий доступный уровень
-  completedLevels: number[];      // Завершенные уровни
-  tierType: 'free' | 'paid';      // Тип подписки
-  aiMessagesCount: number;        // Количество AI сообщений
-  profile: UserProfile;           // Профиль пользователя
-  progressByLevel: Record<number, { // Детальный прогресс по уровням
-    current_step: number;
-    total_steps: number;
-    percentage: number;
-  }>;
+interface LevelArtifacts {
+  level_id: number;
+  level_title: string;
+  level_order: number;
+  artifact: ArtifactFile | null; // One artifact per level
+}
+
+interface ArtifactFile {
+  id: string;
+  file_id: string | null;
+  file_name: string;
+  file_path: string;
+  unlocked_at: string;
+  level_id: number;
 }
 ```
 
 ### Features
-- Автоматическое обновление через realtime subscriptions
-- Оптимизированные запросы к БД (избегает N+1 проблемы)
-- Кэширование результатов
+- **Single query optimization**: Uses JOIN with levels table to get all data in one request
+- **Realtime updates**: Subscribes to user_artifacts table changes with unique channel names
+- **Error handling**: Comprehensive error catching with user-friendly messages
+- **Performance**: Sorted results cached until data changes
+- **SSR compatible**: Handles server-side rendering gracefully
 
-## useLevelAccess
+## useAIQuota
 
-Хук для проверки доступа к конкретному уровню.
+Hook for tracking AI message limits and quota management with automatic reset logic for paid users.
 
 ### Usage
 ```typescript
-const { canAccess, isLocked, reason, level, loading, error, refreshAccess } = useLevelAccess(levelId, userId);
+const { used, remaining, canSend, resetAt, tierType, loading, error, refreshQuota } = useAIQuota(userId);
 ```
 
 ### Parameters
-- `levelId` (number) - ID уровня
-- `userId` (string | undefined) - ID пользователя
+- `userId` (string, optional): User ID to fetch quota information for
 
 ### Returns
-- `canAccess` (boolean) - Может ли пользователь получить доступ к уровню
-- `isLocked` (boolean) - Заблокирован ли уровень
-- `reason` (string | undefined) - Причина блокировки
-- `level` (Level | undefined) - Данные уровня
-- `loading` (boolean) - Состояние загрузки
-- `error` (string | null) - Ошибка
-- `refreshAccess` (function) - Функция для обновления статуса доступа
+- `used`: Number of messages used in current period
+- `remaining`: Number of messages remaining
+- `canSend`: Boolean indicating if user can send more messages
+- `resetAt`: ISO string of next reset time (null for free tier)
+- `tierType`: User's tier ('free' | 'paid')
+- `loading`: Boolean indicating data fetching state
+- `error`: Error message string if fetch fails
+- `refreshQuota`: Function to manually reload quota data
+
+### Tier Logic
+- **Free tier**: 30 total messages (no reset, permanent limit)
+- **Paid tier**: 30 messages per day (resets every 24 hours automatically)
+
+### Features
+- **Automatic reset**: Paid users get daily quota reset without manual intervention
+- **Realtime updates**: Subscribes to user_profiles changes for live quota updates
+- **Transaction safety**: Uses atomic operations for quota reset to prevent race conditions
+- **Timezone handling**: All reset times calculated in UTC for consistency
+- **Error resilience**: Graceful fallback if reset operations fail
+
+### Example Usage in Components
+```typescript
+// In storage page
+const { artifactsData, loading, error } = useUserArtifacts(user?.id);
+
+if (loading) return <LoadingSpinner />;
+if (error) return <ErrorMessage message={error} />;
+
+return (
+  <div>
+    {artifactsData?.artifacts.map(levelArtifact => (
+      <LevelArtifactCard key={levelArtifact.level_id} data={levelArtifact} />
+    ))}
+  </div>
+);
+```
+
+### Optimizations Applied
+1. **useCallback** for all async functions to prevent unnecessary re-renders
+2. **Unique channel names** with timestamp to avoid realtime subscription conflicts
+3. **Single database query** with JOIN instead of multiple queries
+4. **Proper cleanup** with unsubscribe on component unmount
+5. **Error boundaries** with graceful fallbacks
+
+## useLevelAccess
+
+Hook for checking user access to specific levels based on tier and progress.
+
+### Usage
+```typescript
+const { hasAccess, loading, error } = useLevelAccess(userId, levelId);
+```
+
+### Returns
+- `hasAccess`: Boolean indicating if user can access the level
+- `loading`: Boolean loading state
+- `error`: Error message if any
 
 ### Access Rules
-1. **Free tier**: Доступ только к уровням 1-3
-2. **Paid tier**: Доступ ко всем уровням 1-10
-3. **Sequential access**: Нужно завершить предыдущий уровень для доступа к следующему
-4. **Current level**: Пользователь может получить доступ к текущему уровню и всем предыдущим
+- Free tier: Levels 1-3 only
+- Paid tier: All levels 1-10
+- Sequential unlock: Previous level must be completed
 
-## Performance Optimizations
+## Performance Notes
 
-### Database Query Optimization
-- `useUserProgress`: Использует один запрос для всех lesson_steps вместо множественных запросов
-- Кэширование результатов в React Query (встроено в template)
-- Realtime subscriptions только для изменений данных пользователя
-
-### Component Optimization
-- `useMemo` для вычисляемых значений
-- `useCallback` для функций обратного вызова
-- Lazy loading компонентов урока
-
-## Error Handling
-
-### Common Error Scenarios
-1. **Network errors**: Автоматический retry через React Query
-2. **Permission errors**: Показ соответствующих сообщений
-3. **Data consistency**: Валидация данных на клиенте и сервере
-4. **Loading states**: Правильные индикаторы загрузки
-
-### Error Recovery
-- Graceful degradation при ошибках загрузки
-- Fallback UI для критических ошибок
-- Логирование ошибок для отладки
+All hooks are optimized for:
+- Minimal re-renders using useCallback and proper dependencies
+- Single database queries where possible
+- Realtime subscriptions with proper cleanup
+- SSR compatibility with window checks
+- Error handling with graceful degradation
 
 ## Testing
 
-### Manual Testing Checklist
-- ✓ Доступ к уровням работает корректно
-- ✓ Прогресс сохраняется правильно  
-- ✓ Realtime обновления работают
-- ✓ Ограничения tier'ов соблюдаются
-- ✓ Навигация между шагами функционирует
-- ✓ Обработка ошибок работает
+Use test utilities from `src/lib/test-utils.ts`:
+```typescript
+import { validateArtifactStructure, checkPerformanceMetrics } from '@/lib/test-utils';
 
-### Integration Points
-- Supabase RLS policies
-- User authentication state
-- Subscription status
-- Progress synchronization
+// Test data structure
+const isValid = validateArtifactStructure(artifactsData);
 
-## Future Improvements
-
-### Planned Features
-1. Offline support для completed lessons
-2. Advanced analytics and insights
-3. Social features (leaderboards)
-4. Custom learning paths
-5. AI-powered recommendations
-
-### Performance Monitoring
-- Component render times tracking
-- Database query performance
-- User engagement metrics
-- Error rate monitoring 
+// Test performance
+const startTime = Date.now();
+await loadArtifacts();
+const performanceOK = checkPerformanceMetrics(startTime, 'artifacts-query');
+``` 

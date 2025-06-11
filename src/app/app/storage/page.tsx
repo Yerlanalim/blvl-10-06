@@ -5,15 +5,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Upload, Download, Share2, Trash2, Loader2, FileIcon, AlertCircle, CheckCircle, Copy } from 'lucide-react';
+import { Upload, Download, Share2, Trash2, Loader2, FileIcon, AlertCircle, CheckCircle, Copy, GraduationCap } from 'lucide-react';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { FileObject } from '@supabase/storage-js';
+import { useUserArtifacts } from '@/lib/hooks/useUserArtifacts';
 
 export default function FileManagementPage() {
     const { user } = useGlobal();
     const [files, setFiles] = useState<FileObject[]>([]);
     const [uploading, setUploading] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [shareUrl, setShareUrl] = useState('');
@@ -23,9 +23,11 @@ export default function FileManagementPage() {
     const [showCopiedMessage, setShowCopiedMessage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
+    // Use the new artifacts hook
+    const { artifactsData, loading: artifactsLoading, error: artifactsError } = useUserArtifacts(user?.id);
+
     const loadFiles = useCallback(async () => {
         try {
-            setLoading(true);
             setError('');
             const supabase = await createSPASassClient();
             const { data, error } = await supabase.getFiles(user!.id);
@@ -35,8 +37,6 @@ export default function FileManagementPage() {
         } catch (err) {
             setError('Failed to load files');
             console.error('Error loading files:', err);
-        } finally {
-            setLoading(false);
         }
     }, [user]);
 
@@ -175,8 +175,8 @@ export default function FileManagementPage() {
         <div className="space-y-6 p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>File Management</CardTitle>
-                    <CardDescription>Upload, download, and share your files</CardDescription>
+                    <CardTitle>My Learning Materials</CardTitle>
+                    <CardDescription>Download materials from completed lessons</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {error && (
@@ -222,52 +222,142 @@ export default function FileManagementPage() {
                         </label>
                     </div>
 
-                    <div className="space-y-4">
-                        {loading && (
+                    <div className="space-y-6">
+                        {/* Show error from artifacts loading */}
+                        {artifactsError && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4"/>
+                                <AlertDescription>{artifactsError}</AlertDescription>
+                            </Alert>
+                        )}
+
+                        {/* Loading state */}
+                        {artifactsLoading && (
                             <div className="flex items-center justify-center">
                                 <Loader2 className="w-6 h-6 animate-spin"/>
+                                <span className="ml-2">Loading learning materials...</span>
                             </div>
                         )}
-                        {files.length === 0 ? (
-                            <p className="text-center text-gray-500">No files uploaded yet</p>
-                        ) : (
-                            files.map((file) => (
-                                <div
-                                    key={file.name}
-                                    className="flex items-center justify-between p-4 bg-white rounded-lg border"
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <FileIcon className="h-6 w-6 text-gray-400"/>
-                                        <span className="font-medium">{file.name.split('/').pop()}</span>
+
+                        {/* Display artifacts grouped by level */}
+                        {!artifactsLoading && artifactsData && (
+                            <>
+                                {artifactsData.artifacts.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <GraduationCap className="w-12 h-12 text-gray-400 mx-auto mb-3"/>
+                                        <p className="text-gray-500">Complete lessons to unlock materials</p>
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => handleDownload(file.name)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                                            title="Download"
-                                        >
-                                            <Download className="h-5 w-5"/>
-                                        </button>
-                                        <button
-                                            onClick={() => handleShare(file.name)}
-                                            className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
-                                            title="Share"
-                                        >
-                                            <Share2 className="h-5 w-5"/>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setFileToDelete(file.name);
-                                                setShowDeleteDialog(true);
-                                            }}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                                            title="Delete"
-                                        >
-                                            <Trash2 className="h-5 w-5"/>
-                                        </button>
-                                    </div>
+                                ) : (
+                                    artifactsData.artifacts.map((levelArtifacts) => (
+                                        <div key={levelArtifacts.level_id} className="space-y-3">
+                                            {/* Level header */}
+                                            <div className="flex items-center gap-2">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    Level {levelArtifacts.level_id}
+                                                </span>
+                                                <h3 className="font-medium text-gray-900">
+                                                    {levelArtifacts.level_title}
+                                                </h3>
+                                            </div>
+                                            
+                                            {/* Level artifact */}
+                                            {levelArtifacts.artifact && (
+                                                <div
+                                                    key={levelArtifacts.artifact.id}
+                                                    className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                                                >
+                                                    <div className="flex items-center space-x-3">
+                                                        <FileIcon className="h-6 w-6 text-gray-400"/>
+                                                        <div>
+                                                            <span className="font-medium">{levelArtifacts.artifact.file_name}</span>
+                                                            <p className="text-sm text-gray-500">
+                                                                Unlocked on {new Date(levelArtifacts.artifact.unlocked_at).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <button
+                                                            onClick={() => handleDownload(levelArtifacts.artifact!.file_path)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                                            title="Download"
+                                                        >
+                                                            <Download className="h-5 w-5"/>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleShare(levelArtifacts.artifact!.file_path)}
+                                                            className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                                                            title="Share"
+                                                        >
+                                                            <Share2 className="h-5 w-5"/>
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setFileToDelete(levelArtifacts.artifact!.file_path);
+                                                                setShowDeleteDialog(true);
+                                                            }}
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 className="h-5 w-5"/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+
+                        {/* Legacy files section (for admin uploads) */}
+                        {files.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Admin Files
+                                    </span>
+                                    <h3 className="font-medium text-gray-900">
+                                        Other Materials
+                                    </h3>
                                 </div>
-                            ))
+                                {files.map((file) => (
+                                    <div
+                                        key={file.name}
+                                        className="flex items-center justify-between p-4 bg-white rounded-lg border"
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            <FileIcon className="h-6 w-6 text-gray-400"/>
+                                            <span className="font-medium">{file.name.split('/').pop()}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => handleDownload(file.name)}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                                title="Download"
+                                            >
+                                                <Download className="h-5 w-5"/>
+                                            </button>
+                                            <button
+                                                onClick={() => handleShare(file.name)}
+                                                className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                                                title="Share"
+                                            >
+                                                <Share2 className="h-5 w-5"/>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setFileToDelete(file.name);
+                                                    setShowDeleteDialog(true);
+                                                }}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="h-5 w-5"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
 

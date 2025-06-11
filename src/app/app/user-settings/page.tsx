@@ -6,6 +6,7 @@ import { useGlobal } from '@/lib/context/GlobalContext';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { Key, User, CheckCircle } from 'lucide-react';
 import { MFASetup } from '@/components/MFASetup';
+import { ArtifactsList } from '@/components/profile/ArtifactsList';
 
 export default function UserSettingsPage() {
     const { user } = useGlobal();
@@ -152,6 +153,8 @@ export default function UserSettingsPage() {
                             setSuccess('Two-factor authentication settings updated successfully');
                         }}
                     />
+
+                    {user?.id && <ArtifactsList userId={user.id} />}
                 </div>
             </div>
         </div>

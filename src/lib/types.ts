@@ -227,6 +227,44 @@ export type Database = {
           },
         ]
       }
+      artifact_templates: {
+        Row: {
+          id: string
+          level_id: number
+          title: string
+          description: string
+          file_name: string
+          file_type: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          level_id: number
+          title: string
+          description: string
+          file_name: string
+          file_type: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          level_id?: number
+          title?: string
+          description?: string
+          file_name?: string
+          file_type?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artifact_templates_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -325,6 +363,7 @@ export type TestQuestion = Tables<'test_questions'>
 export type UserProfile = Tables<'user_profiles'>
 export type UserProgress = Tables<'user_progress'>
 export type UserArtifact = Tables<'user_artifacts'>
+export type ArtifactTemplate = Tables<'artifact_templates'>
 
 export type StepType = 'text' | 'video' | 'test'
 export type TierType = 'free' | 'paid'
@@ -363,4 +402,37 @@ export interface LevelAccessResult {
   isLocked: boolean;
   reason?: string;
   level?: Level;
+}
+
+// Artifact-related types (re-export from hooks for consistency)
+export interface ArtifactFile {
+  id: string;
+  file_id: string | null;
+  file_name: string;
+  file_path: string;
+  unlocked_at: string;
+  level_id: number;
+}
+
+export interface LevelArtifacts {
+  level_id: number;
+  level_title: string;
+  level_order: number;
+  artifact: ArtifactFile | null; // Only one artifact per level
+}
+
+export interface UserArtifactsResult {
+  artifacts: LevelArtifacts[];
+  artifactsByLevel: Record<number, LevelArtifacts>;
+  totalCount: number;
+}
+
+// AI Quota types
+export interface AIQuotaResult {
+  used: number;
+  remaining: number;
+  canSend: boolean;
+  resetAt: string | null;
+  tierType: TierType;
+  loading: boolean;
 }

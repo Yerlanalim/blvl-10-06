@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy, Star, ArrowRight, BookOpen, Target, Award } from 'lucide-react';
-import { Tables } from '@/lib/types';
+import { Tables, ArtifactTemplate } from '@/lib/types';
 import Confetti from '@/components/Confetti';
+import ArtifactUnlock from './ArtifactUnlock';
 
 interface CompletionScreenProps {
   level: Tables<'levels'>;
+  userId: string;
+  artifactTemplate: ArtifactTemplate | null;
   onContinue: () => void;
 }
 
-export default function CompletionScreen({ level, onContinue }: CompletionScreenProps) {
+export default function CompletionScreen({ level, userId, artifactTemplate, onContinue }: CompletionScreenProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animateElements, setAnimateElements] = useState(false);
 
@@ -34,6 +37,18 @@ export default function CompletionScreen({ level, onContinue }: CompletionScreen
       clearTimeout(timer);
       clearTimeout(confettiTimer);
     };
+  }, []);
+
+  const handleViewOverview = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/app/levels';
+    }
+  }, []);
+
+  const handleReturnToLevels = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/app/levels';
+    }
   }, []);
 
   const achievements = [
@@ -185,6 +200,17 @@ export default function CompletionScreen({ level, onContinue }: CompletionScreen
           </CardContent>
         </Card>
 
+        {/* Artifact Unlock */}
+        {artifactTemplate && (
+          <div className={`transition-all duration-1000 delay-600 ${animateElements ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <ArtifactUnlock 
+              levelId={level.id}
+              userId={userId}
+              artifactTemplate={artifactTemplate}
+            />
+          </div>
+        )}
+
         {/* Next Steps */}
         <div className={`space-y-4 transition-all duration-1000 delay-700 ${animateElements ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           <h3 className="text-2xl font-bold text-gray-900">
@@ -211,11 +237,7 @@ export default function CompletionScreen({ level, onContinue }: CompletionScreen
             </Button>
           ) : (
                          <Button 
-               onClick={() => {
-                 if (typeof window !== 'undefined') {
-                   window.location.href = '/app/levels';
-                 }
-               }}
+               onClick={handleViewOverview}
                size="lg"
                className="flex items-center gap-3 px-8 py-4 text-lg bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 shadow-lg hover:shadow-xl transition-all"
              >
@@ -227,11 +249,7 @@ export default function CompletionScreen({ level, onContinue }: CompletionScreen
                      <Button 
              variant="outline"
              size="lg"
-             onClick={() => {
-               if (typeof window !== 'undefined') {
-                 window.location.href = '/app/levels';
-               }
-             }}
+             onClick={handleReturnToLevels}
              className="px-8 py-4 text-lg border-2 hover:bg-gray-50 transition-all"
            >
              Return to Levels
