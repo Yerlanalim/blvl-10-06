@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useGlobal } from '@/lib/context/GlobalContext';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -153,13 +153,7 @@ export default function TaskManagementPage() {
     const [filter, setFilter] = useState<boolean | null>(null);
     const [showConfetti, setShowConfetti] = useState<boolean>(false);
 
-    useEffect(() => {
-        if (user?.id) {
-            loadTasks();
-        }
-    }, [filter, user?.id]);
-
-    const loadTasks = async (): Promise<void> => {
+    const loadTasks = useCallback(async (): Promise<void> => {
         try {
             const isFirstLoad = initialLoading;
             if (!isFirstLoad) setLoading(true);
@@ -176,7 +170,13 @@ export default function TaskManagementPage() {
             setLoading(false);
             setInitialLoading(false);
         }
-    };
+    }, [initialLoading]);
+
+    useEffect(() => {
+        if (user?.id) {
+            loadTasks();
+        }
+    }, [user?.id, loadTasks, filter]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleRemoveTask = async (id: number): Promise<void> => {

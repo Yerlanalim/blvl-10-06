@@ -18,6 +18,11 @@ interface LevelCardProps {
 }
 
 export default function LevelCard({ level, isLocked, isCompleted, progress = 0, progressDetails }: LevelCardProps) {
+  // Validate props to ensure data integrity
+  if (!level) {
+    console.error('LevelCard: level prop is required');
+    return null;
+  }
   const cardContent = (
     <Card className={`h-full transition-all duration-200 hover:shadow-md ${
       isLocked 

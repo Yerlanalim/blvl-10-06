@@ -52,29 +52,42 @@ export function useUserProgress(userId?: string) {
         console.warn('Error loading detailed progress:', progressError);
       }
 
+      // Get total steps for all levels at once to avoid N+1 queries
+      const { data: allLessonSteps, error: stepsError } = await supabase
+        .from('lesson_steps')
+        .select('level_id, id');
+
+      if (stepsError) {
+        console.warn('Error loading lesson steps:', stepsError);
+      }
+
+      // Calculate steps count by level
+      const stepsByLevel: Record<number, number> = {};
+      if (allLessonSteps) {
+        allLessonSteps.forEach(step => {
+          stepsByLevel[step.level_id] = (stepsByLevel[step.level_id] || 0) + 1;
+        });
+      }
+
       // Calculate progress by level
+      // This creates a comprehensive progress map for each level that includes:
+      // - current_step: The step the user is currently on (1-based)
+      // - total_steps: Total number of steps in the level
+      // - percentage: Completion percentage (0-100)
       const progressByLevel: Record<number, { current_step: number; total_steps: number; percentage: number }> = {};
 
       if (progressRecords) {
-        for (const progress of progressRecords) {
-          // Get total steps for this level
-          const { data: lessonSteps, error: stepsError } = await supabase
-            .from('lesson_steps')
-            .select('id')
-            .eq('level_id', progress.level_id);
-
-          if (!stepsError && lessonSteps) {
-            const totalSteps = lessonSteps.length;
-            const currentStep = progress.current_step;
-            const isCompleted = !!progress.completed_at;
-            
-            progressByLevel[progress.level_id] = {
-              current_step: currentStep,
-              total_steps: totalSteps,
-              percentage: isCompleted ? 100 : Math.round((currentStep / totalSteps) * 100)
-            };
-          }
-        }
+        progressRecords.forEach(progress => {
+          const totalSteps = stepsByLevel[progress.level_id] || 0;
+          const currentStep = progress.current_step;
+          const isCompleted = !!progress.completed_at;
+          
+          progressByLevel[progress.level_id] = {
+            current_step: currentStep,
+            total_steps: totalSteps,
+            percentage: isCompleted ? 100 : Math.round((currentStep / totalSteps) * 100)
+          };
+        });
       }
 
       // For completed levels not in user_progress (legacy data), mark as 100%
@@ -116,49 +129,61 @@ export function useUserProgress(userId?: string) {
     loadUserProgress();
     
     // Set up realtime subscription
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let channel: any = null;
+    
     const setupRealtimeSubscription = async () => {
-      const sassClient = await createSPASassClient();
-      const supabase = sassClient.getSupabaseClient();
-      
-      const channel = supabase
-        .channel('user-progress-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_progress',
-            filter: `user_id=eq.${userId}`
-          },
-          () => {
-            // Reload progress when user_progress changes
-            loadUserProgress();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'user_profiles',
-            filter: `user_id=eq.${userId}`
-          },
-          () => {
-            // Reload progress when user profile changes
-            loadUserProgress();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      try {
+        const sassClient = await createSPASassClient();
+        const supabase = sassClient.getSupabaseClient();
+        
+        // Create unique channel name to avoid conflicts
+        const channelName = `user-progress-${userId}-${Date.now()}`;
+        
+        channel = supabase
+          .channel(channelName)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'user_progress',
+              filter: `user_id=eq.${userId}`
+            },
+            () => {
+              // Reload progress when user_progress changes
+              loadUserProgress();
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'user_profiles',
+              filter: `user_id=eq.${userId}`
+            },
+            () => {
+              // Reload progress when user profile changes
+              loadUserProgress();
+            }
+          )
+          .subscribe();
+      } catch (error) {
+        console.warn('Failed to setup realtime subscription:', error);
+      }
     };
 
-    const unsubscribe = setupRealtimeSubscription();
+    setupRealtimeSubscription();
     
     return () => {
-      unsubscribe.then(cleanup => cleanup && cleanup());
+      if (channel) {
+        try {
+          channel.unsubscribe();
+        } catch (error) {
+          console.warn('Error unsubscribing from channel:', error);
+        }
+      }
     };
   }, [userId, loadUserProgress]);
 

@@ -36,8 +36,10 @@ export default function LessonContainer({
 
   // Load existing progress
   useEffect(() => {
-    loadStepProgress();
-  }, [level.id, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (level?.id && userId) {
+      loadStepProgress();
+    }
+  }, [level?.id, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadStepProgress = async () => {
     try {

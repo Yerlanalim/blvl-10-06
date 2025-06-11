@@ -15,6 +15,11 @@ export function useLevelAccess(levelId: number, userId?: string) {
   const checkLevelAccess = useCallback(async () => {
     if (!userId || !levelId) {
       setLoading(false);
+      setAccessResult({
+        canAccess: false,
+        isLocked: true,
+        reason: 'Missing user ID or level ID'
+      });
       return;
     }
 

@@ -85,8 +85,8 @@ const Confetti: React.FC<ConfettiProps> = ({ active }) => {
         <canvas
             ref={canvasRef}
             className="fixed inset-0 pointer-events-none z-50"
-            width={window.innerWidth}
-            height={window.innerHeight}
+            width={typeof window !== 'undefined' ? window.innerWidth : 800}
+            height={typeof window !== 'undefined' ? window.innerHeight : 600}
         />
     );
 };
