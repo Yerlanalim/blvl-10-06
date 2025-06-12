@@ -59,19 +59,49 @@ const nextConfig: NextConfig = {
 
   // Webpack configuration optimized for Next.js 15
   webpack: (config, { dev, isServer }) => {
-    // Production optimizations only
+    // Production optimizations only (enhanced for fix6.5.2)
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          maxSize: 200000, // 200KB max chunk size
           cacheGroups: {
-            // Essential chunks only for production
+            // Core libraries
             supabase: {
               test: /[\\/]node_modules[\\/](@supabase|supabase)/,
               name: 'supabase',
               chunks: 'all',
+              priority: 20,
+            },
+            // AI libraries (heavy components)
+            ai: {
+              test: /[\\/](lib[\\/]ai|@google-cloud|vertexai)/,
+              name: 'ai-vendor',
+              chunks: 'all',
+              priority: 19,
+            },
+            // Admin features (lazy loaded)
+            admin: {
+              test: /[\\/](admin|analytics)/,
+              name: 'admin',
+              chunks: 'async',
+              priority: 18,
+            },
+            // UI components
+            ui: {
+              test: /[\\/]components[\\/]ui[\\/]/,
+              name: 'ui-components',
+              chunks: 'all',
+              priority: 15,
+            },
+            // Other vendor libraries
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
               priority: 10,
+              minChunks: 2,
             },
           },
         },

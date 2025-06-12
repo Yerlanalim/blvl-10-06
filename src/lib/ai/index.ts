@@ -1,21 +1,18 @@
 // AI Integration Module
 // Centralized exports for all AI-related functionality
 
-// Types
+// Types (optimized for fix6.5.2 tree shaking)
 export type {
   ChatMessage,
   ChatContext,
-  ChatResponse,
   AIQuotaStatus,
   AIError
 } from './types'
 
-// Vertex AI client
+// Vertex AI client (optimized for fix6.5.2 tree shaking)
 export {
   createChatSession,
   generateStreamingResponse,
-  generateResponse,
-  testConnection,
   configuredModel
 } from './vertex'
 

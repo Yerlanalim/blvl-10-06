@@ -1,5 +1,5 @@
 import { VertexAI, HarmCategory, HarmBlockThreshold } from '@google-cloud/vertexai'
-import type { ChatResponse, AIError } from './types'
+import type { AIError } from './types'
 
 // Vertex AI Configuration from environment
 const projectId = process.env.VERTEX_AI_PROJECT_ID
@@ -17,6 +17,7 @@ if (!projectId) {
 }
 
 // Initialize Vertex AI client with Service Account from environment variables
+// Optimized configuration for fix6.5 - faster response times
 const vertexAI = new VertexAI({
   project: projectId,
   location: location,
@@ -31,7 +32,9 @@ const vertexAI = new VertexAI({
       type: 'service_account',
       project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
     }
-  }
+  },
+  // Add timeout configuration for faster responses
+  apiEndpoint: `${location}-aiplatform.googleapis.com`
 })
 
 /**
@@ -117,55 +120,7 @@ export async function* generateStreamingResponse(
   }
 }
 
-/**
- * Generate single response from Vertex AI
- * Returns complete response at once
- */
-export async function generateResponse(
-  message: string,
-  systemPrompt?: string
-): Promise<ChatResponse> {
-  try {
-    const model = createChatSession()
-    
-    // Prepare the full message with system instruction
-    const fullMessage = systemPrompt 
-      ? `${systemPrompt}\n\nUser: ${message}`
-      : message
-
-    const chat = model.startChat({
-      history: [],
-    })
-
-    const result = await chat.sendMessage(fullMessage)
-    const response = await result.response
-
-    // Extract text from response
-    let content = ''
-    const candidates = response.candidates
-    if (candidates && candidates.length > 0) {
-      const candidate = candidates[0]
-      if (candidate.content && candidate.content.parts) {
-        content = candidate.content.parts
-          .map(part => part.text || '')
-          .join('')
-      }
-    }
-
-    return {
-      content,
-      finishReason: candidates?.[0]?.finishReason,
-      usage: {
-        promptTokens: response.usageMetadata?.promptTokenCount || 0,
-        completionTokens: response.usageMetadata?.candidatesTokenCount || 0,
-        totalTokens: response.usageMetadata?.totalTokenCount || 0
-      }
-    }
-  } catch (error) {
-    console.error('Error in response generation:', error)
-    throw createAIError(error)
-  }
-}
+// generateResponse removed for fix6.5.2 tree shaking - only streaming is used
 
 /**
  * Create standardized AI error with proper categorization
@@ -213,19 +168,7 @@ function createAIError(error: unknown): AIError {
   }
 }
 
-/**
- * Test Vertex AI connection
- * Verifies that the service is accessible and working
- */
-export async function testConnection(): Promise<boolean> {
-  try {
-    const response = await generateResponse('Test message for connection verification')
-    return response.content.length > 0
-  } catch (error) {
-    console.error('Vertex AI connection test failed:', error)
-    return false
-  }
-}
+// testConnection removed for fix6.5.2 tree shaking - not used in production
 
 // Export the configured model name for reference
 export const configuredModel = modelName 

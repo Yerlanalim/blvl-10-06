@@ -10,6 +10,7 @@ export const maxDuration = 30
 
 export async function POST(req: Request) {
   const errorHandler = createErrorHandler();
+  const startTime = Date.now(); // Performance monitoring for fix6.5
   
   try {
     // 1. Проверка авторизации
@@ -103,6 +104,7 @@ export async function POST(req: Request) {
     }
 
     // 7. Создание streaming ответа
+    const aiStartTime = Date.now(); // AI response time monitoring
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -113,6 +115,11 @@ export async function POST(req: Request) {
           }
           
           controller.close()
+          
+          // Performance logging for fix6.5
+          const totalTime = Date.now() - startTime;
+          const aiTime = Date.now() - aiStartTime;
+          console.log(`[PERF] AI API - Total: ${totalTime}ms, AI: ${aiTime}ms, User: ${user.id.slice(0, 8)}`);
         } catch (error) {
           console.error('Streaming error:', error)
           controller.error(error)

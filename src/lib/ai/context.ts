@@ -3,7 +3,7 @@ import { createSSRClient } from '@/lib/supabase/server'
 
 // Simple in-memory cache for context to avoid repeated DB queries within same session
 const contextCache = new Map<string, { context: ChatContext; timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes cache
+const CACHE_TTL = 15 * 60 * 1000 // 15 minutes cache (increased from 5min for fix6.5)
 
 /**
  * Build minimal context for AI assistant
@@ -106,25 +106,18 @@ export function clearAllContextCache(): void {
 
 /**
  * Format context for AI prompt
- * Creates a concise context string for the system prompt
+ * Creates a minimal context string for the system prompt (optimized for fix6.5)
  */
 export function formatContextForPrompt(context: ChatContext): string {
-  const completedLevelsText = context.completedLevels.length > 0 
-    ? `Completed levels: ${context.completedLevels.join(', ')}`
-    : 'No levels completed yet'
-  
+  // Minimal context to reduce token usage and improve response time
   const stepText = {
-    text: 'reading the lesson content',
-    video: 'watching the video lesson', 
-    test: 'taking the quiz'
+    text: 'reading',
+    video: 'watching', 
+    test: 'testing'
   }[context.currentStep]
   
-  return `User Context:
-- Current Level: ${context.currentLevel} (${context.currentLevelTitle})
-- Current Activity: ${stepText}
-- ${completedLevelsText}
-- Subscription: ${context.tierType}
-`
+  // Compact format to reduce token count
+  return `Context: L${context.currentLevel}(${context.currentLevelTitle}) ${stepText}, ${context.tierType}, completed: ${context.completedLevels.length}`
 }
 
 /**
