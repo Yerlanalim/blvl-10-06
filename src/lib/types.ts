@@ -436,3 +436,34 @@ export interface AIQuotaResult {
   tierType: TierType;
   loading: boolean;
 }
+
+// Tier System types (Task 5.1)
+export type TierFeature = 
+  | 'basic_content' 
+  | 'all_content' 
+  | 'ai_assistant' 
+  | 'certificates' 
+  | 'community';
+
+export interface TierConfig {
+  name: string;
+  maxLevels: number;
+  aiMessagesTotal: number | null;
+  aiMessagesDaily: number | null;
+  features: TierFeature[];
+}
+
+export interface LevelAccessCheck {
+  canAccess: boolean;
+  isLocked: boolean;
+  reason?: string;
+  tierRestriction?: boolean;
+  progressRestriction?: boolean;
+}
+
+export interface AIMessageCheck {
+  canSend: boolean;
+  remaining: number;
+  limitType: 'total' | 'daily' | 'none';
+  resetAt?: string | null;
+}

@@ -44,7 +44,7 @@ Our Services include:
 ### 6.1 Billing and Tiers
 - Free Tier: Access to levels 1-3, 30 AI messages total
 - Paid Tier: Access to all 10 levels, 30 AI messages per day
-- Subscription fees are billed in advance through Paddle
+- Subscription fees are billed in advance through secure payment provider
 - Prices are listed in EUR/USD and may be subject to local taxes
 - We reserve the right to change pricing with 30 days notice
 

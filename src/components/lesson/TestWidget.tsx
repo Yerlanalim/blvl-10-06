@@ -5,18 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, AlertCircle, RotateCcw, TrendingUp, Award } from 'lucide-react';
 import { Tables } from '@/lib/types';
+import { trackTestSubmitted } from '@/lib/analytics';
 
 interface TestWidgetProps {
   questions: Tables<'test_questions'>[];
   isCompleted: boolean;
   onComplete: () => void;
+  levelId?: number;
+  userTier?: 'free' | 'paid';
 }
 
-export default function TestWidget({ questions, isCompleted, onComplete }: TestWidgetProps) {
+export default function TestWidget({ questions, isCompleted, onComplete, levelId, userTier = 'free' }: TestWidgetProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(isCompleted);
   const [score, setScore] = useState<number | null>(null);
+  const [testStartTime] = useState<number>(Date.now());
 
   if (questions.length === 0) {
     return (
@@ -66,6 +70,22 @@ export default function TestWidget({ questions, isCompleted, onComplete }: TestW
     });
     
     const finalScore = Math.round((correct / questions.length) * 100);
+    const timeSpent = Math.round((Date.now() - testStartTime) / 1000);
+    
+    // Track test submission
+    if (levelId) {
+      const skillCategory = questions[0]?.skill_category || 'general';
+      trackTestSubmitted(
+        levelId,
+        finalScore,
+        questions.length,
+        timeSpent,
+        correct,
+        skillCategory,
+        userTier
+      );
+    }
+    
     setScore(finalScore);
     setShowResults(true);
     

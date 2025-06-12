@@ -1,178 +1,267 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useGlobal } from '@/lib/context/GlobalContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import LevelGrid from '@/components/level/LevelGrid';
 import { useUserProgress } from '@/lib/hooks/useUserProgress';
+import { useTierAccess } from '@/lib/hooks/useTierAccess';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { Tables } from '@/lib/types';
-import { Loader2, AlertCircle, Trophy, BookOpen } from 'lucide-react';
+import { Loader2, AlertCircle, Trophy, BookOpen, Lock } from 'lucide-react';
 
 export default function LevelsPage() {
   const { user } = useGlobal();
+  const searchParams = useSearchParams();
   const [levels, setLevels] = useState<Tables<'levels'>[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const { 
-    userProgress, 
-    loading: progressLoading, 
-    error: progressError 
-  } = useUserProgress(user?.id);
+  const [isClient, setIsClient] = useState(false);
 
+  // Get hooks data with better error handling
+  const { progressData, progressDetails, loading: progressLoading, error: progressError } = useUserProgress(user?.id);
+  const { tierType, maxLevels, loading: tierLoading, error: tierError } = useTierAccess(user?.id);
+
+  // Combined loading state with minimum time to prevent flash
+  const [minLoadingTime, setMinLoadingTime] = useState(true);
+  const isLoading = useMemo(() => {
+    return !isClient || progressLoading || tierLoading || minLoadingTime || !user;
+  }, [isClient, progressLoading, tierLoading, minLoadingTime, user]);
+
+  // Set minimum loading time and client state
   useEffect(() => {
-    loadLevels();
+    setIsClient(true);
+    const timer = setTimeout(() => setMinLoadingTime(false), 300);
+    return () => clearTimeout(timer);
   }, []);
 
-  const loadLevels = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const sassClient = await createSPASassClient();
-      const supabase = sassClient.getSupabaseClient();
-      
-      const { data, error: levelsError } = await supabase
-        .from('levels')
-        .select('*')
-        .order('order_index', { ascending: true });
-
-      if (levelsError) {
-        throw levelsError;
+  // Load levels data with enhanced error handling
+  useEffect(() => {
+    const loadLevels = async () => {
+      if (!isClient || !user) {
+        return;
       }
 
-      setLevels(data || []);
-      
-    } catch (err) {
-      console.error('Error loading levels:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load levels');
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setError(null);
+        console.debug('Loading levels for user:', user.id);
+        
+        const supabaseClient = await createSPASassClient();
+        if (!supabaseClient) {
+          throw new Error('Failed to initialize Supabase client');
+        }
 
-  if (loading || progressLoading) {
+        const { data, error: supabaseError } = await supabaseClient
+          .getSupabaseClient()
+          .from('levels')
+          .select('*')
+          .order('level_number');
+
+        if (supabaseError) {
+          console.error('Supabase error details:', {
+            message: supabaseError.message,
+            code: supabaseError.code,
+            details: supabaseError.details,
+            hint: supabaseError.hint
+          });
+          throw new Error(`Database error: ${supabaseError.message || 'Unknown database error'}`);
+        }
+
+        if (!data) {
+          throw new Error('No levels data received from database');
+        }
+
+        console.debug('Successfully loaded levels:', data.length);
+        setLevels(data);
+      } catch (err) {
+        console.error('Error loading levels - Full error details:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : 'Unknown error',
+          errorStack: err instanceof Error ? err.stack : undefined,
+          userId: user?.id,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Set a more descriptive error message
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : `Failed to load levels. Please refresh the page or contact support if the problem persists.`;
+        
+        setError(errorMessage);
+      }
+    };
+
+    loadLevels();
+  }, [isClient, user]);
+
+  // Memoized computed values for performance
+  const { completedLevels, currentLevel, stats } = useMemo(() => {
+    if (!progressData) {
+      return {
+        completedLevels: [],
+        currentLevel: 1,
+        stats: { completed: 0, total: levels.length, progress: 0 }
+      };
+    }
+
+    const completed = Object.entries(progressData)
+      .filter(([, progress]) => progress >= 100)
+      .map(([levelId]) => parseInt(levelId));
+
+    const current = Math.max(1, ...completed) + 1;
+    const totalProgress = Object.values(progressData).reduce((sum, p) => sum + p, 0);
+    const avgProgress = levels.length > 0 ? totalProgress / levels.length : 0;
+
+    return {
+      completedLevels: completed,
+      currentLevel: current,
+      stats: {
+        completed: completed.length,
+        total: levels.length,
+        progress: Math.round(avgProgress)
+      }
+    };
+  }, [progressData, levels.length]);
+
+  // Show loading state
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
-          <p className="text-gray-600">Loading your learning path...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+          <p className="text-gray-600">Loading your levels...</p>
         </div>
       </div>
     );
   }
 
-  if (error || progressError) {
+  // Show error state with more details
+  if (error || progressError || tierError) {
+    const displayError = error || progressError || tierError;
     return (
-      <div className="space-y-6">
+      <div className="p-6 max-w-4xl mx-auto">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {error || progressError}
+            <div className="space-y-2">
+              <p className="font-medium">Unable to load levels</p>
+              <p className="text-sm">{displayError}</p>
+              {process.env.NODE_ENV === 'development' && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer">Debug Info</summary>
+                  <pre className="mt-2 p-2 bg-gray-100 rounded overflow-auto">
+                    {JSON.stringify({
+                      error,
+                      progressError,
+                      tierError,
+                      user: user?.id,
+                      isClient,
+                      timestamp: new Date().toISOString()
+                    }, null, 2)}
+                  </pre>
+                </details>
+              )}
+              <button 
+                onClick={() => window.location.reload()} 
+                className="text-sm underline text-blue-600 hover:text-blue-800"
+              >
+                Try refreshing the page
+              </button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const completedCount = userProgress?.completedLevels.length || 0;
-  const totalCount = levels.length;
-  const currentLevel = userProgress?.currentLevel || 1;
-  const tierType = userProgress?.tierType || 'free';
-  const accessibleCount = tierType === 'paid' ? totalCount : Math.min(3, totalCount);
+  // Show not authenticated state
+  if (!user) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto text-center">
+        <h1 className="text-2xl font-bold mb-4">Please Sign In</h1>
+        <p className="text-gray-600">You need to be signed in to access your levels.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Master Business Skills
-        </h1>
-        <p className="text-xl text-gray-600 mb-6">
-          Progress through 10 comprehensive levels to build your business expertise
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Your Business Journey</h1>
+        <p className="text-gray-600">
+          Master business fundamentals through 10 progressive levels
         </p>
-        
-        {/* Progress Summary */}
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-2 mx-auto">
-                    <Trophy className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{completedCount}</div>
-                  <div className="text-sm text-gray-600">Completed</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-100 mb-2 mx-auto">
-                    <BookOpen className="h-6 w-6 text-primary-600" />
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{currentLevel}</div>
-                  <div className="text-sm text-gray-600">Current Level</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-2 mx-auto">
-                    <span className="text-blue-600 font-bold">{accessibleCount}</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{accessibleCount}</div>
-                  <div className="text-sm text-gray-600">
-                    Available {tierType === 'free' && '(Free)'}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
-      {/* Tier Notice for Free Users */}
-      {tierType === 'free' && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+      {/* Success message */}
+      {searchParams.get('completed') && (
+        <Alert className="mb-6 border-green-200 bg-green-50">
+          <Trophy className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Congratulations! You&apos;ve completed a level. Keep up the great progress!
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Progress Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Trophy className="h-8 w-8 text-yellow-500" />
+            <div>
+              <p className="text-sm text-gray-600">Completed</p>
+              <p className="text-2xl font-bold">{stats.completed}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <BookOpen className="h-8 w-8 text-blue-500" />
+            <div>
+              <p className="text-sm text-gray-600">Available</p>
+              <p className="text-2xl font-bold">{maxLevels}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+              <span className="text-green-600 font-bold">{stats.progress}%</span>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Overall Progress</p>
+              <p className="text-2xl font-bold">{stats.progress}%</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tier Limitation Alert */}
+      {tierType === 'free' && levels.length > 3 && (
+        <Alert className="mb-6 border-blue-200 bg-blue-50">
+          <Lock className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
             You&apos;re on the free plan with access to the first 3 levels. 
-            <a href="/app/user-settings" className="ml-1 text-primary-600 hover:underline">
-              Upgrade to unlock all 10 levels
-            </a>
+            Upgrade to Premium to unlock all 10 business levels.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Levels Grid */}
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Learning Path</CardTitle>
-            <CardDescription>
-              Each level builds upon the previous one. Complete lessons in order to unlock the next level.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LevelGrid 
-              levels={levels}
-              userProgress={userProgress ? {
-                currentLevel: userProgress.currentLevel,
-                completedLevels: userProgress.completedLevels,
-                tierType: userProgress.tierType
-              } : undefined}
-              progressData={userProgress?.progressByLevel ? 
-                Object.fromEntries(
-                  Object.entries(userProgress.progressByLevel).map(([levelId, progress]) => [
-                    levelId, 
-                    progress.percentage
-                  ])
-                ) : {}
-              }
-              progressDetails={userProgress?.progressByLevel || {}}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      <LevelGrid
+        levels={levels}
+        userProgress={{
+          currentLevel,
+          completedLevels,
+          tierType
+        }}
+        progressData={progressData}
+        progressDetails={progressDetails}
+      />
     </div>
   );
 } 

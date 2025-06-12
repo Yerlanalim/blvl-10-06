@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { TierType, AIQuotaResult } from '@/lib/types';
+import { realtimeManager } from '@/lib/supabase/realtime-manager';
 
 export function useAIQuota(userId?: string) {
   const [quotaData, setQuotaData] = useState<AIQuotaResult>({
@@ -14,6 +15,42 @@ export function useAIQuota(userId?: string) {
     loading: true
   });
   const [error, setError] = useState<string | null>(null);
+
+  // Send AI quota reminder email
+  const sendQuotaReminderEmail = useCallback(async (
+    userEmail: string, 
+    firstName: string, 
+    remaining: number, 
+    tierType: TierType
+  ) => {
+    try {
+      const emailResponse = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'ai-quota-reminder',
+          to: userEmail,
+          firstName,
+          messagesRemaining: remaining,
+          tierType,
+          isDaily: tierType === 'paid'
+        })
+      });
+
+      if (emailResponse.ok) {
+        console.log(`[AI_QUOTA] Quota reminder email sent (${remaining} remaining)`);
+        return true;
+      } else {
+        console.error('[AI_QUOTA] Failed to send quota reminder email');
+        return false;
+      }
+    } catch (error) {
+      console.error('[AI_QUOTA] Error sending quota reminder email:', error);
+      return false;
+    }
+  }, []);
 
   const loadQuotaData = useCallback(async () => {
     if (!userId) {
@@ -30,7 +67,7 @@ export function useAIQuota(userId?: string) {
       // Get user profile with AI quota data
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('ai_messages_count, ai_daily_reset_at, tier_type')
+        .select('ai_messages_count, ai_daily_reset_at, tier_type, ai_quota_reminder_sent, first_name')
         .eq('user_id', userId)
         .single();
 
@@ -42,10 +79,11 @@ export function useAIQuota(userId?: string) {
         throw new Error('User profile not found');
       }
 
-      const { ai_messages_count, ai_daily_reset_at, tier_type } = profile;
+      const { ai_messages_count, ai_daily_reset_at, tier_type, ai_quota_reminder_sent, first_name } = profile;
       const tierType = tier_type as TierType;
       let used = ai_messages_count;
       let resetAt = ai_daily_reset_at;
+      let reminderSent = ai_quota_reminder_sent;
       
       // Check if reset is needed for paid users
       if (tierType === 'paid' && ai_daily_reset_at) {
@@ -56,12 +94,13 @@ export function useAIQuota(userId?: string) {
         if (resetTime <= now) {
           const newResetAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24 hours
           
-          // Perform reset in transaction
+          // Perform reset in transaction, also reset reminder flag
           const { error: resetError } = await supabase
             .from('user_profiles')
             .update({
               ai_messages_count: 0,
               ai_daily_reset_at: newResetAt.toISOString(),
+              ai_quota_reminder_sent: false,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', userId);
@@ -71,6 +110,7 @@ export function useAIQuota(userId?: string) {
           } else {
             used = 0;
             resetAt = newResetAt.toISOString();
+            reminderSent = false;
           }
         }
       }
@@ -87,6 +127,31 @@ export function useAIQuota(userId?: string) {
 
       const canSend = remaining > 0;
 
+      // Send quota reminder email if needed
+      if (remaining <= 5 && remaining > 0 && !reminderSent) {
+        // Get user email for sending reminder
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          const emailSent = await sendQuotaReminderEmail(
+            user.email,
+            first_name || user.email.split('@')[0],
+            remaining,
+            tierType
+          );
+
+          if (emailSent) {
+            // Mark reminder as sent
+            await supabase
+              .from('user_profiles')
+              .update({
+                ai_quota_reminder_sent: true,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', userId);
+          }
+        }
+      }
+
       setQuotaData({
         used,
         remaining,
@@ -101,7 +166,7 @@ export function useAIQuota(userId?: string) {
       setError(err instanceof Error ? err.message : 'Failed to load quota');
       setQuotaData(prev => ({ ...prev, loading: false }));
     }
-  }, [userId]);
+  }, [userId, sendQuotaReminderEmail]);
 
   useEffect(() => {
     if (!userId) {
@@ -111,53 +176,34 @@ export function useAIQuota(userId?: string) {
 
     loadQuotaData();
     
-    // Set up realtime subscription for quota updates
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let channel: any = null;
+    // Set up realtime subscription using centralized manager
+    const subscriberId = `useAIQuota-${userId}-${Date.now()}`;
+    let cleanup: (() => void) | null = null;
     
-    const setupRealtimeSubscription = async () => {
+    const setupSubscription = async () => {
       try {
-        const sassClient = await createSPASassClient();
-        const supabase = sassClient.getSupabaseClient();
-        
-        // Create unique channel name to avoid conflicts
-        const channelName = `ai-quota-${userId}-${Date.now()}`;
-        
-        channel = supabase
-          .channel(channelName)
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'user_profiles',
-              filter: `user_id=eq.${userId}`
-            },
-            (payload) => {
-              // Reload quota when ai_messages_count or ai_daily_reset_at changes
-              if (payload.new && (
-                'ai_messages_count' in payload.new || 
-                'ai_daily_reset_at' in payload.new
-              )) {
-                loadQuotaData();
-              }
-            }
-          )
-          .subscribe();
+        const unsubscribe = await realtimeManager.subscribe(
+          userId,
+          {
+            table: 'user_profiles',
+            event: 'UPDATE',
+            filter: `user_id=eq.${userId}`,
+            callback: loadQuotaData
+          },
+          subscriberId
+        );
+
+        cleanup = () => unsubscribe();
       } catch (error) {
         console.warn('Failed to setup realtime subscription for AI quota:', error);
       }
     };
 
-    setupRealtimeSubscription();
-    
+    setupSubscription();
+
     return () => {
-      if (channel) {
-        try {
-          channel.unsubscribe();
-        } catch (error) {
-          console.warn('Error unsubscribing from AI quota channel:', error);
-        }
+      if (cleanup) {
+        cleanup();
       }
     };
   }, [userId, loadQuotaData]);

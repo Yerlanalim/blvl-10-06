@@ -1,18 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import StepIndicator from './StepIndicator';
 import NavigationButtons from './NavigationButtons';
-import TextContent from './TextContent';
-import VideoPlayer from './VideoPlayer';
-import TestWidget from './TestWidget';
-import CompletionScreen from './CompletionScreen';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { Tables, LessonStepWithQuestions, StepType, ArtifactTemplate } from '@/lib/types';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { trackLessonStepCompleted } from '@/lib/analytics';
+
+// Lazy load тяжелые компоненты
+const TextContent = lazy(() => import('./TextContent'));
+const VideoPlayer = lazy(() => import('./VideoPlayer'));
+const TestWidget = lazy(() => import('./TestWidget'));
+const CompletionScreen = lazy(() => import('./CompletionScreen'));
 
 interface LessonContainerProps {
   level: Tables<'levels'>;
@@ -34,14 +37,36 @@ export default function LessonContainer({
   const [stepProgress, setStepProgress] = useState<Record<number, boolean>>({});
   const [isCompleted, setIsCompleted] = useState(false);
   const [artifactTemplate, setArtifactTemplate] = useState<ArtifactTemplate | null>(null);
+  const [stepStartTime] = useState<number>(Date.now());
+  const [userTier, setUserTier] = useState<'free' | 'paid'>('free');
 
   // Load existing progress and artifact template
   useEffect(() => {
     if (level?.id && userId) {
       loadStepProgress();
       loadArtifactTemplate();
+      loadUserTier();
     }
   }, [level?.id, userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadUserTier = async () => {
+    try {
+      const sassClient = await createSPASassClient();
+      const supabase = sassClient.getSupabaseClient();
+      
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('tier_type')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && profile) {
+        setUserTier(profile.tier_type as 'free' | 'paid' || 'free');
+      }
+    } catch (err) {
+      console.error('Error loading user tier:', err);
+    }
+  };
 
   const loadStepProgress = async () => {
     try {
@@ -176,6 +201,19 @@ export default function LessonContainer({
   };
 
   const handleStepComplete = async () => {
+    // Track lesson step completion
+    const currentStep = lessonSteps[currentStepIndex];
+    if (currentStep) {
+      const timeSpent = Math.round((Date.now() - stepStartTime) / 1000);
+      trackLessonStepCompleted(
+        level.order_index,
+        currentStep.step_type as 'text' | 'video' | 'test',
+        currentStepIndex + 1,
+        timeSpent,
+        userTier
+      );
+    }
+    
     await updateProgress(currentStepIndex, true);
   };
 
@@ -199,12 +237,20 @@ export default function LessonContainer({
     // If all steps completed, show completion screen
     if (isCompleted) {
       return (
-        <CompletionScreen 
-          level={level}
-          userId={userId}
-          artifactTemplate={artifactTemplate}
-          onContinue={handleLevelComplete}
-        />
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+            <span className="ml-2 text-gray-600">Loading completion screen...</span>
+          </div>
+        }>
+          <CompletionScreen 
+            level={level}
+            userId={userId}
+            artifactTemplate={artifactTemplate}
+            onContinue={handleLevelComplete}
+            userTier={userTier}
+          />
+        </Suspense>
       );
     }
 
@@ -214,32 +260,47 @@ export default function LessonContainer({
     const stepType = currentStep.step_type as StepType;
     const isStepCompleted = stepProgress[currentStepIndex] || false;
 
+    const fallback = (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+        <span className="ml-2 text-gray-600">Loading step content...</span>
+      </div>
+    );
+
     switch (stepType) {
       case 'text':
         return (
-          <TextContent 
-            content={currentStep.content}
-            isCompleted={isStepCompleted}
-            onComplete={handleStepComplete}
-          />
+          <Suspense fallback={fallback}>
+            <TextContent 
+              content={currentStep.content}
+              isCompleted={isStepCompleted}
+              onComplete={handleStepComplete}
+            />
+          </Suspense>
         );
       
       case 'video':
         return (
-          <VideoPlayer 
-            content={currentStep.content}
-            isCompleted={isStepCompleted}
-            onComplete={handleStepComplete}
-          />
+          <Suspense fallback={fallback}>
+            <VideoPlayer 
+              content={currentStep.content}
+              isCompleted={isStepCompleted}
+              onComplete={handleStepComplete}
+            />
+          </Suspense>
         );
       
       case 'test':
         return (
-          <TestWidget 
-            questions={currentStep.test_questions || []}
-            isCompleted={isStepCompleted}
-            onComplete={handleStepComplete}
-          />
+          <Suspense fallback={fallback}>
+            <TestWidget 
+              questions={currentStep.test_questions || []}
+              isCompleted={isStepCompleted}
+              onComplete={handleStepComplete}
+              levelId={level.order_index}
+              userTier={userTier}
+            />
+          </Suspense>
         );
       
       default:

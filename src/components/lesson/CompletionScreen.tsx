@@ -7,17 +7,77 @@ import { Trophy, Star, ArrowRight, BookOpen, Target, Award } from 'lucide-react'
 import { Tables, ArtifactTemplate } from '@/lib/types';
 import Confetti from '@/components/Confetti';
 import ArtifactUnlock from './ArtifactUnlock';
+import { createSPASassClient } from '@/lib/supabase/client';
 
 interface CompletionScreenProps {
   level: Tables<'levels'>;
   userId: string;
   artifactTemplate: ArtifactTemplate | null;
   onContinue: () => void;
+  userTier?: 'free' | 'paid';
 }
 
-export default function CompletionScreen({ level, userId, artifactTemplate, onContinue }: CompletionScreenProps) {
+export default function CompletionScreen({ level, userId, artifactTemplate, onContinue, userTier = 'free' }: CompletionScreenProps) {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animateElements, setAnimateElements] = useState(false);
+
+  // Send level complete email
+  const sendLevelCompleteEmail = useCallback(async () => {
+    try {
+      const supabase = await createSPASassClient();
+      const client = supabase.getSupabaseClient();
+
+      // Get user data
+      const { data: { user } } = await client.auth.getUser();
+      if (!user?.email) return;
+
+      // Get user profile for first name
+      const { data: profile } = await client
+        .from('user_profiles')
+        .select('first_name')
+        .eq('id', userId)
+        .single();
+
+      // Get next level info
+      const { data: nextLevel } = await client
+        .from('levels')
+        .select('title')
+        .eq('order_index', level.order_index + 1)
+        .single();
+
+      // Count user's total artifacts
+      const { count: artifactsCount } = await client
+        .from('user_artifacts')
+        .select('id', { count: 'exact' })
+        .eq('user_id', userId);
+
+      // Send level complete email via API
+      const emailResponse = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'level-complete',
+          to: user.email,
+          firstName: profile?.first_name || user.email.split('@')[0],
+          levelNumber: level.order_index,
+          levelTitle: level.title,
+          nextLevelTitle: nextLevel?.title,
+          artifactsUnlocked: artifactsCount || 0,
+          totalLevelsCompleted: level.order_index
+        })
+      });
+
+      if (emailResponse.ok) {
+        console.log(`[COMPLETION] Level complete email sent for level ${level.order_index}`);
+      } else {
+        console.error('[COMPLETION] Failed to send level complete email');
+      }
+    } catch (error) {
+      console.error('[COMPLETION] Error sending level complete email:', error);
+    }
+  }, [level, userId]);
 
   useEffect(() => {
     // Start confetti animation
@@ -33,11 +93,14 @@ export default function CompletionScreen({ level, userId, artifactTemplate, onCo
       setShowConfetti(false);
     }, 3000);
 
+    // Send level complete email
+    sendLevelCompleteEmail();
+
     return () => {
       clearTimeout(timer);
       clearTimeout(confettiTimer);
     };
-  }, []);
+  }, [sendLevelCompleteEmail]);
 
   const handleViewOverview = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -207,6 +270,7 @@ export default function CompletionScreen({ level, userId, artifactTemplate, onCo
               levelId={level.id}
               userId={userId}
               artifactTemplate={artifactTemplate}
+              userTier={userTier}
             />
           </div>
         )}

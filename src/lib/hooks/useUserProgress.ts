@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { UserProgressResult } from '@/lib/types';
+import { realtimeManager } from '@/lib/supabase/realtime-manager';
+
+// Cache для часто используемых данных
+const progressCache = new Map<string, { data: UserProgressResult; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
 export function useUserProgress(userId?: string) {
   const [userProgress, setUserProgress] = useState<UserProgressResult | null>(null);
@@ -11,6 +16,15 @@ export function useUserProgress(userId?: string) {
 
   const loadUserProgress = useCallback(async () => {
     if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    // Проверяем cache
+    const cacheKey = `progress-${userId}`;
+    const cached = progressCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setUserProgress(cached.data);
       setLoading(false);
       return;
     }
@@ -103,14 +117,22 @@ export function useUserProgress(userId?: string) {
         });
       }
 
-      setUserProgress({
+      const progressResult = {
         currentLevel: profile.current_level,
         completedLevels: profile.completed_lessons || [],
         tierType: profile.tier_type as 'free' | 'paid',
         aiMessagesCount: profile.ai_messages_count,
         profile,
         progressByLevel
+      };
+
+      // Сохраняем в cache
+      progressCache.set(cacheKey, {
+        data: progressResult,
+        timestamp: Date.now()
       });
+
+      setUserProgress(progressResult);
       
     } catch (err) {
       console.error('Error loading user progress:', err);
@@ -120,6 +142,7 @@ export function useUserProgress(userId?: string) {
     }
   }, [userId]);
 
+  // Set up realtime subscription for progress changes
   useEffect(() => {
     if (!userId) {
       setLoading(false);
@@ -127,76 +150,68 @@ export function useUserProgress(userId?: string) {
     }
 
     loadUserProgress();
-    
-    // Set up realtime subscription
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let channel: any = null;
-    
+
+    // Set up realtime subscription with unique ID and proper cleanup
+    const subscriberId = `useUserProgress-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    let cleanup: (() => void) | null = null;
+
     const setupRealtimeSubscription = async () => {
       try {
-        const sassClient = await createSPASassClient();
-        const supabase = sassClient.getSupabaseClient();
-        
-        // Create unique channel name to avoid conflicts
-        const channelName = `user-progress-${userId}-${Date.now()}`;
-        
-        channel = supabase
-          .channel(channelName)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'user_progress',
-              filter: `user_id=eq.${userId}`
-            },
-            () => {
-              // Reload progress when user_progress changes
-              loadUserProgress();
+        // Delay subscription to avoid conflicts
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        const unsubscribe = await realtimeManager.subscribe(
+          userId,
+          {
+            table: 'user_progress',
+            event: '*',
+            filter: `user_id=eq.${userId}`,
+            callback: () => {
+              // Debounce the reload to prevent rapid updates
+              setTimeout(loadUserProgress, 300);
             }
-          )
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'user_profiles',
-              filter: `user_id=eq.${userId}`
-            },
-            () => {
-              // Reload progress when user profile changes
-              loadUserProgress();
-            }
-          )
-          .subscribe();
+          },
+          subscriberId
+        );
+
+        cleanup = () => {
+          try {
+            unsubscribe();
+          } catch (err) {
+            console.debug('useUserProgress: cleanup error (non-critical):', err);
+          }
+        };
       } catch (error) {
-        console.warn('Failed to setup realtime subscription:', error);
+        console.debug('useUserProgress: subscription setup failed (non-critical):', error);
+        // Non-critical error - progress will still work without realtime updates
       }
     };
 
     setupRealtimeSubscription();
-    
+
     return () => {
-      if (channel) {
-        try {
-          channel.unsubscribe();
-        } catch (error) {
-          console.warn('Error unsubscribing from channel:', error);
-        }
+      if (cleanup) {
+        cleanup();
       }
     };
   }, [userId, loadUserProgress]);
 
-  const refreshProgress = () => {
+  const refreshProgress = useCallback(() => {
     if (userId) {
+      // Очищаем cache перед обновлением
+      const cacheKey = `progress-${userId}`;
+      progressCache.delete(cacheKey);
       loadUserProgress();
     }
-  };
+  }, [userId, loadUserProgress]);
 
-  return {
+  // Мемоизированные вычисления для производительности
+  const memoizedResult = useMemo(() => ({
     userProgress,
     loading,
     error,
     refreshProgress
-  };
+  }), [userProgress, loading, error, refreshProgress]);
+
+  return memoizedResult;
 } 

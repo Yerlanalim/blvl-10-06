@@ -3,21 +3,21 @@ import { getUserContextForAI } from '@/lib/ai/context'
 import { createSystemPrompt } from '@/lib/ai/prompts'
 import { generateStreamingResponse } from '@/lib/ai/vertex'
 import type { AIError } from '@/lib/ai/types'
+import { createErrorHandler, withGracefulDegradation } from '@/lib/api/error-handler'
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30
 
 export async function POST(req: Request) {
+  const errorHandler = createErrorHandler();
+  
   try {
     // 1. Проверка авторизации
     const supabase = await createSSRClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
-      return Response.json(
-        { error: 'Unauthorized' }, 
-        { status: 401 }
-      )
+      return errorHandler.unauthorized('Authentication required to access AI assistant');
     }
 
     // 2. Получение user_profile для проверки лимитов
@@ -28,10 +28,7 @@ export async function POST(req: Request) {
       .single()
 
     if (profileError || !profile) {
-      return Response.json(
-        { error: 'Profile not found' }, 
-        { status: 404 }
-      )
+      return errorHandler.notFound('User profile not found');
     }
 
     // 3. Rate limiting logic
@@ -51,30 +48,28 @@ export async function POST(req: Request) {
     // Проверка лимитов
     const maxMessages = 30
     if (currentCount >= maxMessages) {
-      return Response.json(
-        { 
-          error: 'Rate limit exceeded',
-          type: 'rate_limit',
-          message: profile.tier_type === 'free' 
-            ? 'You have reached your 30 message limit. Upgrade to paid plan for daily refresh.'
-            : 'You have reached your daily limit of 30 messages. Try again tomorrow.'
-        }, 
-        { status: 429 }
-      )
+      const message = profile.tier_type === 'free' 
+        ? 'You have reached your 30 message limit. Upgrade to paid plan for daily refresh.'
+        : 'You have reached your daily limit of 30 messages. Try again tomorrow.';
+      return errorHandler.rateLimit(message);
     }
 
     // 4. Извлечение сообщения пользователя
     const { message } = await req.json()
     
     if (!message || typeof message !== 'string') {
-      return Response.json(
-        { error: 'Message is required' }, 
-        { status: 400 }
-      )
+      return errorHandler.validation('Message is required and must be a string', {
+        received: typeof message,
+        messageLength: message?.length || 0
+      });
     }
 
-    // 5. Построение контекста пользователя
-    const userContext = await getUserContextForAI(user.id)
+    // 5. Построение контекста пользователя с graceful degradation
+    const userContext = await withGracefulDegradation(
+      () => getUserContextForAI(user.id),
+      undefined, // fallback to undefined context
+      'getUserContextForAI'
+    );
     const systemPrompt = createSystemPrompt(userContext || undefined)
 
     // 6. Обновление счетчика перед ответом (транзакция)
@@ -101,10 +96,10 @@ export async function POST(req: Request) {
 
     if (updateError) {
       console.error('Error updating message count:', updateError)
-      return Response.json(
-        { error: 'Internal server error' }, 
-        { status: 500 }
-      )
+      return errorHandler.internal('Failed to update message count', {
+        supabaseError: updateError.message,
+        userId: user.id
+      });
     }
 
     // 7. Создание streaming ответа
@@ -140,15 +135,17 @@ export async function POST(req: Request) {
     const aiError = error as AIError
     
     if (aiError.type === 'rate_limit') {
-      return Response.json(
-        { error: aiError.message }, 
-        { status: 429 }
-      )
+      return errorHandler.rateLimit(aiError.message || 'AI service rate limit exceeded');
     }
     
-    return Response.json(
-      { error: 'Internal server error' }, 
-      { status: 500 }
-    )
+    if (aiError.type === 'network') {
+      return errorHandler.network(aiError.message || 'AI service network error');
+    }
+    
+    // Generic error with details
+    return errorHandler.internal('Unexpected error occurred', {
+      errorType: aiError.type,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 } 

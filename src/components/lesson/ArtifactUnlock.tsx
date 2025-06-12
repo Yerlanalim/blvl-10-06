@@ -7,6 +7,7 @@ import { Gift, Download, CheckCircle, Loader2, FileText, AlertCircle } from 'luc
 import { createSPASassClient } from '@/lib/supabase/client';
 import { Tables } from '@/lib/types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { trackArtifactDownloaded } from '@/lib/analytics';
 
 type ArtifactTemplateType = Tables<'artifact_templates'>;
 
@@ -14,13 +15,15 @@ interface ArtifactUnlockProps {
   levelId: number;
   userId: string;
   artifactTemplate: ArtifactTemplateType | null;
+  userTier?: 'free' | 'paid';
 }
 
-export default function ArtifactUnlock({ levelId, userId, artifactTemplate }: ArtifactUnlockProps) {
+export default function ArtifactUnlock({ levelId, userId, artifactTemplate, userTier = 'free' }: ArtifactUnlockProps) {
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isAlreadyUnlocked, setIsAlreadyUnlocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unlockSuccess, setUnlockSuccess] = useState(false);
+  const [unlockStartTime] = useState<number>(Date.now());
 
   const checkArtifactStatus = useCallback(async () => {
     try {
@@ -98,6 +101,15 @@ export default function ArtifactUnlock({ levelId, userId, artifactTemplate }: Ar
     // Check SSR compatibility
     if (typeof window === 'undefined') return;
 
+    // Track artifact download
+    const unlockTime = Math.round((Date.now() - unlockStartTime) / 1000);
+    trackArtifactDownloaded(
+      levelId,
+      artifactTemplate.file_type,
+      userTier,
+      unlockTime
+    );
+
     // For now, just create a placeholder download
     // In a real implementation, this would download from Supabase storage
     const blob = new Blob(['This is a placeholder file for ' + artifactTemplate.title], { type: 'text/plain' });
@@ -109,7 +121,7 @@ export default function ArtifactUnlock({ levelId, userId, artifactTemplate }: Ar
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [artifactTemplate]);
+  }, [artifactTemplate, levelId, userTier, unlockStartTime]);
 
   if (!artifactTemplate) {
     return null; // No artifact for this level

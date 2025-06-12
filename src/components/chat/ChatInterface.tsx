@@ -1,29 +1,70 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import MessageList, { ChatMessage } from './MessageList';
 import MessageInput from './MessageInput';
 import QuotaDisplay from './QuotaDisplay';
 import { useAIQuota } from '@/lib/hooks/useAIQuota';
+import { getCachedResponse, setCachedResponse } from '@/lib/ai/cache';
 import { AlertCircle, Bot } from 'lucide-react';
+import { trackAIMessageSent, trackAIQuotaExceeded } from '@/lib/analytics';
 
 interface ChatInterfaceProps {
   userId: string;
 }
 
-export default function ChatInterface({ userId }: ChatInterfaceProps) {
+function ChatInterface({ userId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   
-  const { canSend, remaining, refreshQuota } = useAIQuota(userId);
+  const { canSend, remaining, refreshQuota, tierType, quota } = useAIQuota(userId);
+
+  // Мемоизируем expensive calculations
+  const canSendMessage = useMemo(() => canSend && remaining > 0, [canSend, remaining]);
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!canSend || remaining <= 0) {
+    if (!canSendMessage) {
       setError('Message limit reached. Please upgrade your plan or wait for reset.');
+      
+      // Track quota exceeded event
+      trackAIQuotaExceeded(
+        tierType || 'free',
+        (quota?.limit || 30) - remaining,
+        quota?.limit || 30
+      );
+      
+      return;
+    }
+
+    const messageStartTime = Date.now();
+
+    // Check cache first
+    const cachedResponse = getCachedResponse(content);
+    if (cachedResponse) {
+      // Add user message
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content,
+        timestamp: new Date()
+      };
+
+      // Add cached assistant response
+      const assistantMessage: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: cachedResponse,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, userMessage, assistantMessage]);
+      
+      // Still refresh quota to get current count
+      refreshQuota();
       return;
     }
 
@@ -81,6 +122,11 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
         reader.releaseLock();
       }
 
+      // Cache the response for future use
+      if (assistantContent.trim()) {
+        setCachedResponse(content, assistantContent.trim());
+      }
+
       // Add assistant message to history
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -91,6 +137,15 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
 
       setMessages(prev => [...prev, assistantMessage]);
       setStreamingContent('');
+      
+      // Track successful AI message
+      const responseTime = Date.now() - messageStartTime;
+      trackAIMessageSent(
+        content.length,
+        responseTime,
+        tierType || 'free',
+        remaining - 1 // Subtract 1 because quota hasn't been refreshed yet
+      );
       
       // Refresh quota to get updated count
       refreshQuota();
@@ -104,7 +159,7 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [canSend, remaining, refreshQuota]);
+  }, [canSendMessage, refreshQuota, tierType, remaining, quota]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -163,18 +218,15 @@ export default function ChatInterface({ userId }: ChatInterfaceProps) {
           <div className="border-t border-gray-200 p-4">
             <MessageInput
               onSendMessage={sendMessage}
-              disabled={!canSend || remaining <= 0}
+              disabled={!canSendMessage}
               isLoading={isLoading}
             />
-            
-            {!canSend && (
-              <div className="mt-2 text-sm text-red-600">
-                Message limit reached. {remaining === 0 ? 'Upgrade to continue.' : ''}
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
     </div>
   );
-} 
+}
+
+// Мемоизируем компонент для предотвращения unnecessary re-renders
+export default React.memo(ChatInterface); 

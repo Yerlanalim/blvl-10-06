@@ -11,6 +11,29 @@ BizLevel is an educational platform with 10 sequential business levels designed 
 - **Progress Tracking**: Monitor your advancement through each level
 - **Secure Authentication**: Complete user management with Supabase Auth
 
+## Test Accounts
+
+For development and testing purposes, you can use these pre-configured accounts:
+
+### Free Tier Account
+- **Email**: `test-free@bizlevel.com`
+- **Password**: `TestPass123!`
+- **Access**: Levels 1-3, 30 AI messages total
+- **Features**: Basic content, community access
+
+### Premium Tier Account  
+- **Email**: `test-premium@bizlevel.com`
+- **Password**: `TestPass123!`
+- **Access**: All 10 levels, 30 AI messages daily
+- **Features**: All content, AI assistant, certificates
+
+### Development Account
+- **Email**: `deus2111@gmail.com` 
+- **Access**: Premium tier for development testing
+- **Note**: Auto-upgrades in development mode
+
+> **Note**: Test accounts automatically get their tier assigned. Payment flows are stubbed in development mode for easy testing.
+
 ## Getting Started
 
 First, run the development server:

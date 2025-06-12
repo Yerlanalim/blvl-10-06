@@ -66,7 +66,7 @@ To request a refund:
 
 ### 8.1 Refund Method
 - Refunds processed through original payment method
-- Processed via Paddle payment system
+- Processed via secure payment provider
 - Currency same as original payment
 
 ### 8.2 Processing Time

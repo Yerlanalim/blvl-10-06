@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createSPASassClient } from '@/lib/supabase/client';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { LevelArtifacts, UserArtifactsResult, ArtifactFile } from '@/lib/types';
+import { realtimeManager } from '@/lib/supabase/realtime-manager';
 
 export function useUserArtifacts(userId?: string) {
   const [artifactsData, setArtifactsData] = useState<UserArtifactsResult | null>(null);
@@ -98,48 +99,34 @@ export function useUserArtifacts(userId?: string) {
 
     loadUserArtifacts();
     
-    // Set up realtime subscription for artifacts
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let channel: any = null;
+    // Set up realtime subscription using centralized manager
+    const subscriberId = `useUserArtifacts-${userId}-${Date.now()}`;
+    let cleanup: (() => void) | null = null;
     
-    const setupRealtimeSubscription = async () => {
+    const setupSubscription = async () => {
       try {
-        const sassClient = await createSPASassClient();
-        const supabase = sassClient.getSupabaseClient();
-        
-        // Create unique channel name to avoid conflicts
-        const channelName = `user-artifacts-${userId}-${Date.now()}`;
-        
-        channel = supabase
-          .channel(channelName)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'user_artifacts',
-              filter: `user_id=eq.${userId}`
-            },
-            () => {
-              // Reload artifacts when user_artifacts changes
-              loadUserArtifacts();
-            }
-          )
-          .subscribe();
+        const unsubscribe = await realtimeManager.subscribe(
+          userId,
+          {
+            table: 'user_artifacts',
+            event: '*',
+            filter: `user_id=eq.${userId}`,
+            callback: loadUserArtifacts
+          },
+          subscriberId
+        );
+
+        cleanup = () => unsubscribe();
       } catch (error) {
-        console.warn('Failed to setup realtime subscription:', error);
+        console.warn('Failed to setup realtime subscription for artifacts:', error);
       }
     };
 
-    setupRealtimeSubscription();
-    
+    setupSubscription();
+
     return () => {
-      if (channel) {
-        try {
-          channel.unsubscribe();
-        } catch (error) {
-          console.warn('Error unsubscribing from channel:', error);
-        }
+      if (cleanup) {
+        cleanup();
       }
     };
   }, [userId, loadUserArtifacts]);

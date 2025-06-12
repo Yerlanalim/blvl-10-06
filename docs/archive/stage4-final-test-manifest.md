@@ -92,6 +92,7 @@ This document serves as the final validation checklist for Task 4.6: Stage 4 Tes
 
 ### Authentication Tests
 - [ ] Unauthenticated users cannot access /app/chat
+-
 - [ ] Login redirects work properly
 - [ ] Valid sessions allow chat access
 - [ ] Session expiration handled gracefully

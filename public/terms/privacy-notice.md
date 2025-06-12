@@ -18,7 +18,7 @@ This Privacy Notice explains how we collect, use, disclose, and safeguard your i
 ### 3.1 Personal Information
 - Email address
 - Account credentials
-- Payment information (processed by Paddle)
+- Payment information (processed by secure payment provider)
 - Profile information and preferences
 
 ### 3.2 Educational Data
@@ -58,7 +58,7 @@ We use collected information for:
 ### 5.1 Storage
 - Data is stored on secure servers
 - We use Supabase for database management
-- Payment data is handled by Paddle
+- Payment data is handled by secure payment provider
 - Learning progress is regularly backed up
 
 ### 5.2 Security Measures
@@ -70,7 +70,7 @@ We use collected information for:
 ## 6. Data Sharing and Disclosure
 
 We may share information with:
-- Service providers (Paddle, Supabase, AI services)
+- Service providers (Payment processor, Supabase, AI services)
 - Legal authorities when required
 - Educational partners with your consent
 - Anonymized data for research purposes

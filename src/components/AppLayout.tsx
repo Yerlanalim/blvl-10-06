@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useGlobal } from "@/lib/context/GlobalContext";
 import { createSPASassClient } from "@/lib/supabase/client";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineIndicator from "@/components/OfflineIndicator";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -164,9 +166,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <main className="p-4">
-                    {children}
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
                 </main>
             </div>
+            
+            {/* Offline indicator */}
+            <OfflineIndicator />
         </div>
     );
 }
