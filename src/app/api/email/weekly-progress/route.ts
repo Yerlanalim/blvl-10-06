@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
 
         // Send weekly progress email
         const result = await sendWeeklyProgressEmail(
-          user.email,
-          user.first_name || user.email.split('@')[0],
+          user.email || '',
+          user.first_name || (user.email ? user.email.split('@')[0] : 'User'),
           {
             levelsCompletedThisWeek: levelsCompletedThisWeek || 0,
             totalLevelsCompleted: totalLevelsCompleted || 0,

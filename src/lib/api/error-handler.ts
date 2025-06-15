@@ -91,10 +91,7 @@ export class APIErrorHandler {
     details?: Record<string, any>
   ): NextResponse<APIError> {
     // Get client identifier for rate limiting
-    const headersList = headers();
-    const clientIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
-    const userAgent = headersList.get('user-agent') || 'unknown';
-    const identifier = `${clientIp}_${userAgent.substring(0, 50)}`;
+    const identifier = `unknown_${Date.now()}`; // Simplified for now
 
     // Check rate limit
     if (!checkErrorRateLimit(identifier)) {

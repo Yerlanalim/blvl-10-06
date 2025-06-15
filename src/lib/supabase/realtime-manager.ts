@@ -1,6 +1,8 @@
 // Simplified Realtime Manager to prevent subscription conflicts
+// Enhanced with performance monitoring for fix6.6
 import { createSPASassClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { realtimeMonitor } from '@/lib/monitoring/realtime-monitor';
 
 interface SubscriptionConfig {
   table: string;
@@ -29,6 +31,7 @@ class RealtimeManager {
     config: SubscriptionConfig,
     subscriberId: string
   ): Promise<() => void> {
+    const startTime = Date.now();
     const channelKey = this.getChannelKey(config.table, config.filter);
 
     try {
@@ -43,24 +46,38 @@ class RealtimeManager {
         const channel = supabase
           .channel(`realtime-${channelKey}-${Date.now()}`)
           .on(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            'postgres_changes' as any,
+            'postgres_changes',
             {
-              event: config.event,
+              event: config.event as any,
               schema: 'public',
               table: config.table,
               ...(config.filter && { filter: config.filter })
             },
-            config.callback // Direct callback execution - no debouncing
+            (payload: any) => {
+              const messageStart = Date.now();
+              try {
+                config.callback();
+                // Record successful message processing
+                realtimeMonitor.recordMessage(channelKey, subscriberId, Date.now() - messageStart);
+              } catch (error) {
+                // Record callback error
+                realtimeMonitor.recordError(channelKey, subscriberId, error as Error);
+                console.error(`❌ Callback error in ${channelKey}:`, error);
+              }
+            }
           );
 
         await channel.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             console.debug(`✅ Realtime subscription active: ${channelKey}`);
+            // Record successful subscription
+            realtimeMonitor.recordSubscription(channelKey, subscriberId, Date.now() - startTime);
           } else if (status === 'CHANNEL_ERROR') {
             console.error(`❌ Realtime subscription error: ${channelKey}`);
+            realtimeMonitor.recordError(channelKey, subscriberId, new Error('Channel subscription error'));
           } else if (status === 'CLOSED') {
             console.debug(`🔒 Realtime subscription closed: ${channelKey}`);
+            realtimeMonitor.recordConnectionDrop(subscriberId);
           }
         });
 
@@ -85,6 +102,8 @@ class RealtimeManager {
 
     } catch (error) {
       console.error(`❌ Failed to setup realtime subscription for ${channelKey}:`, error);
+      // Record subscription failure
+      realtimeMonitor.recordError(channelKey, subscriberId, error as Error);
       // Return noop unsubscribe function
       return () => {};
     }

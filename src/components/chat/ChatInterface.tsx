@@ -21,7 +21,7 @@ function ChatInterface({ userId }: ChatInterfaceProps) {
   const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   
-  const { canSend, remaining, refreshQuota, tierType, quota } = useAIQuota(userId);
+  const { canSend, remaining, refreshQuota, tierType, used } = useAIQuota(userId);
 
   // Мемоизируем expensive calculations
   const canSendMessage = useMemo(() => canSend && remaining > 0, [canSend, remaining]);
@@ -33,8 +33,8 @@ function ChatInterface({ userId }: ChatInterfaceProps) {
       // Track quota exceeded event
       trackAIQuotaExceeded(
         tierType || 'free',
-        (quota?.limit || 30) - remaining,
-        quota?.limit || 30
+        used || 0,
+        30
       );
       
       return;
@@ -159,7 +159,7 @@ function ChatInterface({ userId }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [canSendMessage, refreshQuota, tierType, remaining, quota]);
+  }, [canSendMessage, refreshQuota, tierType, remaining, used]);
 
   const clearError = useCallback(() => {
     setError(null);

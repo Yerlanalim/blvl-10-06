@@ -57,7 +57,6 @@ function CreateTaskDialog({ onTaskCreated }: CreateTaskDialogProps) {
         try {
             setLoading(true);
             const supabase = await createSPASassClient();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const newTask: NewTask = {
                 title: newTaskTitle.trim(),
                 description: newTaskDescription.trim() || null,
@@ -178,10 +177,9 @@ export default function TaskManagementPage() {
         }
     }, [user?.id, loadTasks, filter]);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const handleRemoveTask = async (id: number): Promise<void> => {
+    const handleRemoveTask = async (_id: number): Promise<void> => {
         try {
-            // Temporary: id not used while table feature is hidden
+            // Temporary: _id not used while table feature is hidden
             const supabase = await createSPASassClient();
             const { error: supabaseError } = await supabase.removeTask();
             if (supabaseError) throw supabaseError;
@@ -192,10 +190,9 @@ export default function TaskManagementPage() {
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const handleMarkAsDone = async (id: number): Promise<void> => {
+    const handleMarkAsDone = async (_id: number): Promise<void> => {
         try {
-            // Temporary: id not used while table feature is hidden
+            // Temporary: _id not used while table feature is hidden
             const supabase = await createSPASassClient();
             const { error: supabaseError } = await supabase.updateAsDone();
             if (supabaseError) throw supabaseError;

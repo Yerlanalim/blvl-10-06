@@ -132,7 +132,7 @@ function generateEmailHTML(emailData: EmailData): string {
       });
       
     default:
-      throw new Error(`Unknown email type: ${emailData.type}`);
+      throw new Error(`Unknown email type: ${(emailData as any).type}`);
   }
 }
 

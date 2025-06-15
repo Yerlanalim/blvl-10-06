@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createSPASassClient } from '@/lib/supabase/client';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { LevelArtifacts, UserArtifactsResult, ArtifactFile } from '@/lib/types';
+import { LevelArtifacts, UserArtifactsResult } from '@/lib/types';
 import { realtimeManager } from '@/lib/supabase/realtime-manager';
 
 export function useUserArtifacts(userId?: string) {

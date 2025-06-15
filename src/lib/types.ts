@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      artifact_templates: {
+        Row: {
+          created_at: string | null
+          description: string
+          file_name: string
+          file_type: string
+          id: string
+          level_id: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          file_name: string
+          file_type: string
+          id?: string
+          level_id: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          file_name?: string
+          file_type?: string
+          id?: string
+          level_id?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artifact_templates_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_steps: {
         Row: {
           content: string
@@ -151,41 +189,56 @@ export type Database = {
         Row: {
           ai_daily_reset_at: string
           ai_messages_count: number
+          ai_quota_reminder_sent: boolean | null
           avatar_url: string | null
           completed_lessons: number[]
           created_at: string
           current_level: number
           display_name: string | null
+          email: string | null
+          email_notifications: boolean | null
+          first_name: string | null
           id: string
           tier_type: string
           updated_at: string
           user_id: string
+          welcome_email_sent: boolean | null
         }
         Insert: {
           ai_daily_reset_at?: string
           ai_messages_count?: number
+          ai_quota_reminder_sent?: boolean | null
           avatar_url?: string | null
           completed_lessons?: number[]
           created_at?: string
           current_level?: number
           display_name?: string | null
+          email?: string | null
+          email_notifications?: boolean | null
+          first_name?: string | null
           id?: string
           tier_type?: string
           updated_at?: string
           user_id: string
+          welcome_email_sent?: boolean | null
         }
         Update: {
           ai_daily_reset_at?: string
           ai_messages_count?: number
+          ai_quota_reminder_sent?: boolean | null
           avatar_url?: string | null
           completed_lessons?: number[]
           created_at?: string
           current_level?: number
           display_name?: string | null
+          email?: string | null
+          email_notifications?: boolean | null
+          first_name?: string | null
           id?: string
           tier_type?: string
           updated_at?: string
           user_id?: string
+          welcome_email_sent?: boolean | null
         }
         Relationships: []
       }
@@ -220,44 +273,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_progress_level_id_fkey"
-            columns: ["level_id"]
-            isOneToOne: false
-            referencedRelation: "levels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      artifact_templates: {
-        Row: {
-          id: string
-          level_id: number
-          title: string
-          description: string
-          file_name: string
-          file_type: string
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          level_id: number
-          title: string
-          description: string
-          file_name: string
-          file_type: string
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          level_id?: number
-          title?: string
-          description?: string
-          file_name?: string
-          file_type?: string
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "artifact_templates_level_id_fkey"
             columns: ["level_id"]
             isOneToOne: false
             referencedRelation: "levels"

@@ -20,7 +20,7 @@ export default function LevelsPage() {
   const [isClient, setIsClient] = useState(false);
 
   // Get hooks data with better error handling
-  const { progressData, progressDetails, loading: progressLoading, error: progressError } = useUserProgress(user?.id);
+  const { userProgress, loading: progressLoading, error: progressError } = useUserProgress(user?.id);
   const { tierType, maxLevels, loading: tierLoading, error: tierError } = useTierAccess(user?.id);
 
   // Combined loading state with minimum time to prevent flash
@@ -56,7 +56,7 @@ export default function LevelsPage() {
           .getSupabaseClient()
           .from('levels')
           .select('*')
-          .order('level_number');
+          .order('order_index');
 
         if (supabaseError) {
           console.error('Supabase error details:', {
@@ -97,7 +97,7 @@ export default function LevelsPage() {
 
   // Memoized computed values for performance
   const { completedLevels, currentLevel, stats } = useMemo(() => {
-    if (!progressData) {
+    if (!userProgress) {
       return {
         completedLevels: [],
         currentLevel: 1,
@@ -105,12 +105,12 @@ export default function LevelsPage() {
       };
     }
 
-    const completed = Object.entries(progressData)
-      .filter(([, progress]) => progress >= 100)
+    const completed = Object.entries(userProgress.progressByLevel)
+      .filter(([, progress]) => progress.percentage >= 100)
       .map(([levelId]) => parseInt(levelId));
 
     const current = Math.max(1, ...completed) + 1;
-    const totalProgress = Object.values(progressData).reduce((sum, p) => sum + p, 0);
+    const totalProgress = Object.values(userProgress.progressByLevel).reduce((sum, p) => sum + p.percentage, 0);
     const avgProgress = levels.length > 0 ? totalProgress / levels.length : 0;
 
     return {
@@ -122,7 +122,7 @@ export default function LevelsPage() {
         progress: Math.round(avgProgress)
       }
     };
-  }, [progressData, levels.length]);
+  }, [userProgress, levels.length]);
 
   // Show loading state
   if (isLoading) {
@@ -259,8 +259,10 @@ export default function LevelsPage() {
           completedLevels,
           tierType
         }}
-        progressData={progressData}
-        progressDetails={progressDetails}
+        progressData={Object.fromEntries(
+          Object.entries(userProgress?.progressByLevel || {}).map(([key, value]) => [key, value.percentage])
+        )}
+        progressDetails={userProgress?.progressByLevel || {}}
       />
     </div>
   );

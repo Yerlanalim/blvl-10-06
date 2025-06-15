@@ -212,5 +212,18 @@ const errorPreventionSystem = new ErrorPreventionSystem();
 // NOTE: Auto-start removed to prevent double initialization
 // System is started manually from layout.tsx
 
+// Initialize monitoring systems when Error Prevention System starts
+import { realtimeMonitor } from '@/lib/monitoring/realtime-monitor';
+
+// Enhanced startup for fix6.6.2
+const originalStart = errorPreventionSystem.startMonitoring.bind(errorPreventionSystem);
+errorPreventionSystem.startMonitoring = function() {
+  originalStart();
+  
+  // Start realtime performance monitoring
+  realtimeMonitor.startMonitoring();
+  console.debug('🔍 Enhanced monitoring systems activated');
+};
+
 export { errorPreventionSystem };
 export type { ErrorReport }; 

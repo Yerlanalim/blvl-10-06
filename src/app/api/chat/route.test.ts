@@ -114,7 +114,7 @@ export async function testContextFormation(): Promise<{passed: boolean; details:
       typeof mockContext.currentLevelTitle === 'string' &&
       typeof mockContext.currentStep === 'string' &&
       Array.isArray(mockContext.completedLevels) &&
-      (mockContext.tierType === 'free' || mockContext.tierType === 'paid');
+      (['free', 'paid'] as const).includes(mockContext.tierType);
 
     if (hasRequiredFields) {
       details.push('✓ Context has all required fields');

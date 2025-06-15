@@ -47,9 +47,9 @@ const LevelCard: React.FC<LevelCardProps> = ({
     }
 
     if (typeof window !== 'undefined') {
-      trackLevelStarted(level.level_number, level.title);
+      trackLevelStarted(level.order_index, level.title, tierType || 'free');
     }
-  }, [isLocked, tierRestriction, onUpgrade, upgradeHint, level.level_number, level.title]);
+  }, [isLocked, tierRestriction, onUpgrade, upgradeHint, level.order_index, level.title, tierType]);
 
   const cardStyles = React.useMemo(() => {
     if (tierRestriction) {
@@ -110,7 +110,7 @@ const LevelCard: React.FC<LevelCardProps> = ({
         <CardTitle className="flex items-center justify-between text-lg">
           <span className="flex items-center gap-2">
             {getIcon()}
-            Level {level.level_number}
+            Level {level.order_index}
           </span>
           {progress > 0 && progress < 100 && (
             <span className="text-sm font-normal text-blue-600">

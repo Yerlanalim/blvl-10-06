@@ -1,0 +1,118 @@
+src/app/api/chat/route.test.ts(117,8): error TS2367: This comparison appears to be unintentional because the types '"paid"' and '"free"' have no overlap.
+src/app/api/chat/route.ts(148,9): error TS2367: This comparison appears to be unintentional because the types '"network_error" | "invalid_input" | "api_error"' and '"network"' have no overlap.
+src/app/api/email/weekly-progress/route.ts(64,31): error TS2339: Property 'id' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(72,31): error TS2339: Property 'id' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(79,31): error TS2339: Property 'id' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(83,18): error TS2339: Property 'current_level' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(83,40): error TS2339: Property 'current_level' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(87,37): error TS2339: Property 'current_level' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(94,33): error TS2339: Property 'id' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(95,34): error TS2339: Property 'current_level' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(104,28): error TS2339: Property 'current_level' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(112,38): error TS2339: Property 'ai_messages_count' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(117,18): error TS2339: Property 'tier_type' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(126,16): error TS2339: Property 'email' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(127,16): error TS2339: Property 'first_name' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(127,35): error TS2339: Property 'email' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(134,13): error TS2322: Type '{ number: any; title: string; progress: number; } | null' is not assignable to type '{ number: number; title: string; progress: number; } | undefined'.
+  Type 'null' is not assignable to type '{ number: number; title: string; progress: number; } | undefined'.
+src/app/api/email/weekly-progress/route.ts(140,63): error TS2339: Property 'email' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(143,75): error TS2339: Property 'email' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/email/weekly-progress/route.ts(151,71): error TS2339: Property 'id' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/app/api/health/route.ts(42,8): error TS2339: Property 'from' does not exist on type 'SassClient'.
+src/app/api/health/route.ts(151,38): error TS2339: Property 'storage' does not exist on type 'SassClient'.
+src/app/app/levels/page.tsx(23,11): error TS2339: Property 'progressData' does not exist on type '{ userProgress: UserProgressResult | null; loading: boolean; error: string | null; refreshProgress: () => void; }'.
+src/app/app/levels/page.tsx(23,25): error TS2339: Property 'progressDetails' does not exist on type '{ userProgress: UserProgressResult | null; loading: boolean; error: string | null; refreshProgress: () => void; }'.
+src/app/app/levels/page.tsx(109,33): error TS18046: 'progress' is of type 'unknown'.
+src/app/app/levels/page.tsx(113,74): error TS18046: 'sum' is of type 'unknown'.
+src/app/app/levels/page.tsx(113,80): error TS18046: 'p' is of type 'unknown'.
+src/app/app/levels/page.tsx(114,45): error TS18046: 'totalProgress' is of type 'unknown'.
+src/components/chat/ChatInterface.tsx(24,55): error TS2339: Property 'quota' does not exist on type '{ error: string | null; refreshQuota: () => void; used: number; remaining: number; canSend: boolean; resetAt: string | null; tierType: TierType; loading: boolean; }'.
+src/components/lesson/CompletionScreen.tsx(63,31): error TS2339: Property 'first_name' does not exist on type 'SelectQueryError<"column 'first_name' does not exist on 'user_profiles'.">'.
+src/components/level/LevelCard.tsx(50,7): error TS2554: Expected 3-4 arguments, but got 2.
+src/components/level/LevelCard.tsx(50,31): error TS2339: Property 'level_number' does not exist on type '{ created_at: string; description: string; id: number; order_index: number; required_level: number; title: string; }'.
+src/components/level/LevelCard.tsx(52,64): error TS2339: Property 'level_number' does not exist on type '{ created_at: string; description: string; id: number; order_index: number; required_level: number; title: string; }'.
+src/components/level/LevelCard.tsx(113,26): error TS2339: Property 'level_number' does not exist on type '{ created_at: string; description: string; id: number; order_index: number; required_level: number; title: string; }'.
+src/lib/analytics.ts(210,18): error TS2304: Cannot find name 'gtag'.
+src/lib/analytics.ts(211,9): error TS2304: Cannot find name 'gtag'.
+src/lib/analytics.ts(265,16): error TS2353: Object literal may only specify known properties, and 'core_web_vitals' does not exist in type '{ fcp: number; lcp: number; fid: number; cls: number; ttfb: number; } | { endpoint: string; method: string; response_time_ms: number; status_code: number; error?: string | undefined; } | { query_type: string; table_name: string; execution_time_ms: number; rows_affected: number; } | { ...; }'.
+src/lib/analytics.ts(282,11): error TS2353: Object literal may only specify known properties, and 'core_web_vitals' does not exist in type '{ fcp: number; lcp: number; fid: number; cls: number; ttfb: number; } | { endpoint: string; method: string; response_time_ms: number; status_code: number; error?: string | undefined; } | { query_type: string; table_name: string; execution_time_ms: number; rows_affected: number; } | { ...; }'.
+src/lib/analytics.ts(308,69): error TS2339: Property 'url' does not exist on type 'URL | Request'.
+  Property 'url' does not exist on type 'URL'.
+src/lib/analytics.ts(313,13): error TS2353: Object literal may only specify known properties, and 'api_performance' does not exist in type '{ fcp: number; lcp: number; fid: number; cls: number; ttfb: number; } | { endpoint: string; method: string; response_time_ms: number; status_code: number; error?: string | undefined; } | { query_type: string; table_name: string; execution_time_ms: number; rows_affected: number; } | { ...; }'.
+src/lib/analytics.ts(325,69): error TS2339: Property 'url' does not exist on type 'URL | Request'.
+  Property 'url' does not exist on type 'URL'.
+src/lib/analytics.ts(329,13): error TS2353: Object literal may only specify known properties, and 'api_performance' does not exist in type '{ fcp: number; lcp: number; fid: number; cls: number; ttfb: number; } | { endpoint: string; method: string; response_time_ms: number; status_code: number; error?: string | undefined; } | { query_type: string; table_name: string; execution_time_ms: number; rows_affected: number; } | { ...; }'.
+src/lib/analytics.ts(481,5): error TS2353: Object literal may only specify known properties, and 'client_error' does not exist in type '{ fcp: number; lcp: number; fid: number; cls: number; ttfb: number; } | { endpoint: string; method: string; response_time_ms: number; status_code: number; error?: string | undefined; } | { query_type: string; table_name: string; execution_time_ms: number; rows_affected: number; } | { ...; }'.
+src/lib/api/error-handler.ts(95,34): error TS2339: Property 'get' does not exist on type 'Promise<ReadonlyHeaders>'.
+src/lib/api/error-handler.ts(95,72): error TS2339: Property 'get' does not exist on type 'Promise<ReadonlyHeaders>'.
+src/lib/api/error-handler.ts(96,35): error TS2339: Property 'get' does not exist on type 'Promise<ReadonlyHeaders>'.
+src/lib/email/send.ts(135,56): error TS2339: Property 'type' does not exist on type 'never'.
+src/lib/hooks/useAIQuota.ts(82,15): error TS2339: Property 'ai_messages_count' does not exist on type '{ error: true; } & String'.
+src/lib/hooks/useAIQuota.ts(82,34): error TS2339: Property 'ai_daily_reset_at' does not exist on type '{ error: true; } & String'.
+src/lib/hooks/useAIQuota.ts(82,53): error TS2339: Property 'tier_type' does not exist on type '{ error: true; } & String'.
+src/lib/hooks/useAIQuota.ts(82,64): error TS2339: Property 'ai_quota_reminder_sent' does not exist on type '{ error: true; } & String'.
+src/lib/hooks/useAIQuota.ts(82,88): error TS2339: Property 'first_name' does not exist on type '{ error: true; } & String'.
+src/lib/payments/stub.test.ts(7,56): error TS2307: Cannot find module '@jest/globals' or its corresponding type declarations.
+src/lib/payments/stub.test.ts(82,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/lib/payments/stub.test.ts(90,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/lib/payments/stub.test.ts(94,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/lib/payments/stub.test.ts(109,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/lib/payments/stub.test.ts(151,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(151,21): error TS2339: Property 'isActive' does not exist on type 'SubscriptionStatus'.
+src/lib/payments/stub.test.ts(152,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(153,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(170,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(170,21): error TS2339: Property 'isActive' does not exist on type 'SubscriptionStatus'.
+src/lib/payments/stub.test.ts(171,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(172,14): error TS18047: 'status' is possibly 'null'.
+src/lib/payments/stub.test.ts(207,19): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/lib/payments/stub.test.ts(269,33): error TS2339: Property 'handleWebhook' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(288,44): error TS2339: Property 'handleWebhook' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(293,46): error TS2339: Property 'handleWebhook' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(301,19): error TS2339: Property 'config' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(302,19): error TS2339: Property 'config' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(307,27): error TS2339: Property 'getApiKey' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(324,35): error TS2339: Property 'getCustomer' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(336,34): error TS2551: Property 'createCheckoutSession' does not exist on type 'PaymentStub'. Did you mean 'createCheckout'?
+src/lib/payments/stub.test.ts(356,40): error TS2339: Property 'handleWebhook' does not exist on type 'PaymentStub'.
+src/lib/payments/stub.test.ts(368,14): error TS18047: 'initialStatus' is possibly 'null'.
+src/lib/payments/stub.test.ts(368,28): error TS2339: Property 'active' does not exist on type 'SubscriptionStatus'.
+src/lib/payments/stub.test.ts(372,27): error TS2339: Property 'success' does not exist on type 'void'.
+src/lib/payments/stub.test.ts(373,27): error TS2339: Property 'message' does not exist on type 'void'.
+src/lib/payments/stub.test.ts(380,35): error TS2551: Property 'createCheckoutSession' does not exist on type 'PaymentStub'. Did you mean 'createCheckout'?
+src/lib/payments/stub.test.ts(388,35): error TS2551: Property 'createCheckoutSession' does not exist on type 'PaymentStub'. Did you mean 'createCheckout'?
+src/lib/payments/stub.test.ts(410,27): error TS2552: Cannot find name 'paymentStub'. Did you mean 'PaymentStub'?
+src/lib/payments/stub.test.ts(419,27): error TS2552: Cannot find name 'paymentStub'. Did you mean 'PaymentStub'?
+src/lib/payments/stub.test.ts(432,34): error TS2552: Cannot find name 'paymentStub'. Did you mean 'PaymentStub'?
+src/lib/payments/stub.test.ts(436,11): error TS2552: Cannot find name 'paymentStub'. Did you mean 'PaymentStub'?
+src/lib/payments/stub.test.ts(437,26): error TS2552: Cannot find name 'paymentStub'. Did you mean 'PaymentStub'?
+src/lib/supabase/realtime-manager.ts(49,13): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '"postgres_changes"' is not assignable to parameter of type '"system"'.
+src/lib/supabase/realtime-manager.ts(56,14): error TS7006: Parameter 'payload' implicitly has an 'any' type.
+src/lib/tiers/access.test.ts(7,56): error TS2307: Cannot find module '@jest/globals' or its corresponding type declarations.
+src/lib/tiers/access.test.ts(36,5): error TS2322: Type 'null' is not assignable to type 'string'.
+src/lib/tiers/access.test.ts(45,5): error TS2322: Type 'Date' is not assignable to type 'string'.
+src/lib/tiers/access.test.ts(59,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(60,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(61,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(72,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(73,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(74,22): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(85,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(86,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(87,22): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(99,29): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(100,29): error TS2339: Property 'message' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(209,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(210,21): error TS2339: Property 'message' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(215,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(216,21): error TS2339: Property 'message' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(232,21): error TS2339: Property 'hasAccess' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(233,21): error TS2339: Property 'message' does not exist on type 'LevelAccessCheck'.
+src/lib/tiers/access.test.ts(256,7): error TS2304: Cannot find name 'mockSupabase'.
+src/lib/tiers/access.test.ts(267,34): error TS2552: Cannot find name 'canUserSendAIMessage'. Did you mean 'canSendAIMessage'?
+src/tests/e2e/user-flows.test.ts(7,67): error TS2307: Cannot find module '@jest/globals' or its corresponding type declarations.
+src/tests/e2e/user-flows.test.ts(46,17): error TS2540: Cannot assign to 'NODE_ENV' because it is a read-only property.
+src/tests/e2e/user-flows.test.ts(416,16): error TS18046: 'error' is of type 'unknown'.

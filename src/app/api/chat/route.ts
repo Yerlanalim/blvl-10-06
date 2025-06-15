@@ -145,7 +145,7 @@ export async function POST(req: Request) {
       return errorHandler.rateLimit(aiError.message || 'AI service rate limit exceeded');
     }
     
-    if (aiError.type === 'network') {
+    if (aiError.type === 'network_error') {
       return errorHandler.network(aiError.message || 'AI service network error');
     }
     

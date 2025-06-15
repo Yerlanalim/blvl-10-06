@@ -35,7 +35,7 @@ export default function CompletionScreen({ level, userId, artifactTemplate, onCo
       const { data: profile } = await client
         .from('user_profiles')
         .select('first_name')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
       // Get next level info
