@@ -1,14 +1,53 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useGlobal } from '@/lib/context/GlobalContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Upload, Download, Share2, Trash2, Loader2, FileIcon, AlertCircle, CheckCircle, Copy, GraduationCap } from 'lucide-react';
 import { createSPASassClient } from '@/lib/supabase/client';
 import { FileObject } from '@supabase/storage-js';
 import { useUserArtifacts } from '@/lib/hooks/useUserArtifacts';
+
+// Lazy load heavy components
+const AlertDialog = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialog 
+})));
+const AlertDialogAction = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogAction 
+})));
+const AlertDialogCancel = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogCancel 
+})));
+const AlertDialogContent = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogContent 
+})));
+const AlertDialogDescription = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogDescription 
+})));
+const AlertDialogFooter = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogFooter 
+})));
+const AlertDialogHeader = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogHeader 
+})));
+const AlertDialogTitle = lazy(() => import('@/components/ui/alert-dialog').then(module => ({ 
+  default: module.AlertDialogTitle 
+})));
+const Dialog = lazy(() => import('@/components/ui/dialog').then(module => ({ 
+  default: module.Dialog 
+})));
+const DialogContent = lazy(() => import('@/components/ui/dialog').then(module => ({ 
+  default: module.DialogContent 
+})));
+const DialogDescription = lazy(() => import('@/components/ui/dialog').then(module => ({ 
+  default: module.DialogDescription 
+})));
+const DialogHeader = lazy(() => import('@/components/ui/dialog').then(module => ({ 
+  default: module.DialogHeader 
+})));
+const DialogTitle = lazy(() => import('@/components/ui/dialog').then(module => ({ 
+  default: module.DialogTitle 
+})));
 
 export default function FileManagementPage() {
     const { user } = useGlobal();
@@ -362,57 +401,61 @@ export default function FileManagementPage() {
                     </div>
 
                     {/* Share Dialog */}
-                    <Dialog open={Boolean(shareUrl)} onOpenChange={() => {
-                        setShareUrl('');
-                        setSelectedFile(null);
-                    }}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Share {selectedFile?.split('/').pop()}</DialogTitle>
-                                <DialogDescription>
-                                    Copy the link below to share your file. This link will expire in 24 hours.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="flex items-center space-x-2">
-                                <input
-                                    type="text"
-                                    value={shareUrl}
-                                    readOnly
-                                    className="flex-1 p-2 border rounded bg-gray-50"
-                                />
-                                <button
-                                    onClick={() => copyToClipboard(shareUrl)}
-                                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
-                                >
-                                    <Copy className="h-5 w-5"/>
-                                    {showCopiedMessage && (
-                                        <span
-                                            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
-                                            Copied!
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
+                        <Dialog open={Boolean(shareUrl)} onOpenChange={() => {
+                            setShareUrl('');
+                            setSelectedFile(null);
+                        }}>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Share {selectedFile?.split('/').pop()}</DialogTitle>
+                                    <DialogDescription>
+                                        Copy the link below to share your file. This link will expire in 24 hours.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="text"
+                                        value={shareUrl}
+                                        readOnly
+                                        className="flex-1 p-2 border rounded bg-gray-50"
+                                    />
+                                    <button
+                                        onClick={() => copyToClipboard(shareUrl)}
+                                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
+                                    >
+                                        <Copy className="h-5 w-5"/>
+                                        {showCopiedMessage && (
+                                            <span
+                                                className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded">
+                                                Copied!
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </Suspense>
 
                     {/* Delete Confirmation Dialog */}
-                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete File</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete this file? This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>}>
+                        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete File</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete this file? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </Suspense>
                 </CardContent>
             </Card>
         </div>

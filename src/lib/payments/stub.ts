@@ -67,6 +67,15 @@ export class PaymentStub implements PaymentProvider {
   }
 
   /**
+   * Stub implementation - handles webhook events
+   */
+  async handleWebhook(payload: unknown): Promise<void> {
+    console.log(`[PaymentStub] Handling webhook:`, payload);
+    // In a real implementation, this would process webhook events
+    // For stub, we just log the payload
+  }
+
+  /**
    * Update user tier in database
    */
   private async updateUserTier(userId: string, tierType: TierType): Promise<void> {

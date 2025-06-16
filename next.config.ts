@@ -59,6 +59,34 @@ const nextConfig: NextConfig = {
 
   // Webpack configuration optimized for Next.js 15
   webpack: (config, { dev, isServer }) => {
+    // Development optimizations to prevent HTTP 431 errors
+    if (dev) {
+      // Use compact source maps to reduce header size
+      config.devtool = 'eval-cheap-module-source-map';
+      
+      // Minimize stats output to reduce header size
+      config.stats = 'errors-warnings';
+      
+      // Reduce error stack trace verbosity
+      config.optimization = {
+        ...config.optimization,
+        emitOnErrors: false,
+        moduleIds: 'named', // Shorter module names
+      };
+      
+      // Limit infrastructure logging to reduce output size
+      config.infrastructureLogging = {
+        level: 'warn',
+        debug: false,
+      };
+      
+      // Reduce chunk information to minimize header size
+      config.output = {
+        ...config.output,
+        pathinfo: false, // Don't include path info in development
+      };
+    }
+
     // Production optimizations only (enhanced for fix6.5.2)
     if (!dev && !isServer) {
       config.optimization = {
@@ -105,19 +133,6 @@ const nextConfig: NextConfig = {
             },
           },
         },
-      }
-    }
-
-    // Development - let Next.js handle devtool automatically
-    if (dev) {
-      // Don't override devtool - let Next.js optimize it
-      // Only set minimal stats to reduce header size
-      config.stats = 'errors-warnings'
-      
-      // Reduce error verbosity to prevent HTTP 431
-      config.optimization = {
-        ...config.optimization,
-        emitOnErrors: false,
       }
     }
 

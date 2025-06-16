@@ -7,12 +7,21 @@ import { trackPricingViewed, trackUpgradeClicked } from '@/lib/analytics';
 
 const HomePricing = () => {
     const [isClient, setIsClient] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     // Ensure we're on client side to prevent hydration mismatch
     useEffect(() => {
-        setIsClient(true);
-        trackPricingViewed('direct', 'free'); // Default to free since we don't know user tier here
+        setIsMounted(true);
+        // Small delay to ensure DOM is fully stable
+        const timer = setTimeout(() => setIsClient(true), 100);
+        return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        if (isClient && isMounted) {
+            trackPricingViewed('direct', 'free');
+        }
+    }, [isClient, isMounted]);
 
     const handleUpgradeClick = (tierName: string) => {
         if (tierName === 'Premium') {
@@ -58,13 +67,15 @@ const HomePricing = () => {
                     </p>
                 </div>
 
-                {!isClient ? (
-                    <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
-                        <div className="h-96 bg-white rounded-lg border animate-pulse"></div>
-                        <div className="h-96 bg-white rounded-lg border animate-pulse"></div>
+                <div className="relative grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto" suppressHydrationWarning>
+                    {/* Loading skeleton - always rendered but hidden when client loads */}
+                    <div className={`absolute inset-0 grid md:grid-cols-2 gap-8 transition-opacity duration-300 ${isClient && isMounted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                        <div className="h-96 bg-white rounded-lg border animate-pulse" />
+                        <div className="h-96 bg-white rounded-lg border animate-pulse" />
                     </div>
-                ) : (
-                    <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+                    
+                    {/* Actual content - always rendered but hidden until client loads */}
+                    <div className={`transition-opacity duration-300 ${isClient && isMounted ? 'opacity-100' : 'opacity-0'} contents`} suppressHydrationWarning>
                         {tiers.map((tier) => (
                             <Card
                                 key={tier.name}
@@ -116,7 +127,7 @@ const HomePricing = () => {
                             </Card>
                         ))}
                     </div>
-                )}
+                </div>
 
                 <div className="text-center">
                     <div className="flex items-center justify-center gap-6 text-gray-600 mb-4">

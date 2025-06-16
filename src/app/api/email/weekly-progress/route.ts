@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           .eq('user_id', user.id);
 
         // Get current level info if exists
-        let currentLevelInfo = null;
+        let currentLevelInfo: { number: number; title: string; progress: number } | undefined = undefined;
         if (user.current_level && user.current_level <= 10) {
           const { data: currentLevel } = await client
             .from('levels')
@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
               progress: Math.min(progressPercent, 100)
             };
           }
+        } else {
+          currentLevelInfo = undefined;
         }
 
         // Calculate AI messages for the week (approximation)

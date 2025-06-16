@@ -1,12 +1,18 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGlobal } from '@/lib/context/GlobalContext';
 import { createSPASassClient } from '@/lib/supabase/client';
-import { Key, User, CheckCircle } from 'lucide-react';
-import { MFASetup } from '@/components/MFASetup';
-import { ArtifactsList } from '@/components/profile/ArtifactsList';
+import { Key, User, CheckCircle, Loader2 } from 'lucide-react';
+
+// Lazy load heavy components
+const MFASetup = lazy(() => import('@/components/MFASetup').then(module => ({ 
+  default: module.MFASetup 
+})));
+const ArtifactsList = lazy(() => import('@/components/profile/ArtifactsList').then(module => ({ 
+  default: module.ArtifactsList 
+})));
 
 export default function UserSettingsPage() {
     const { user } = useGlobal();
@@ -148,13 +154,33 @@ export default function UserSettingsPage() {
                         </CardContent>
                     </Card>
 
-                    <MFASetup
-                        onStatusChange={() => {
-                            setSuccess('Two-factor authentication settings updated successfully');
-                        }}
-                    />
+                    <Suspense fallback={
+                        <Card>
+                            <CardContent className="flex items-center justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                <span>Loading MFA settings...</span>
+                            </CardContent>
+                        </Card>
+                    }>
+                        <MFASetup
+                            onStatusChange={() => {
+                                setSuccess('Two-factor authentication settings updated successfully');
+                            }}
+                        />
+                    </Suspense>
 
-                    {user?.id && <ArtifactsList userId={user.id} />}
+                    {user?.id && (
+                        <Suspense fallback={
+                            <Card>
+                                <CardContent className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                    <span>Loading learning materials...</span>
+                                </CardContent>
+                            </Card>
+                        }>
+                            <ArtifactsList userId={user.id} />
+                        </Suspense>
+                    )}
                 </div>
             </div>
         </div>

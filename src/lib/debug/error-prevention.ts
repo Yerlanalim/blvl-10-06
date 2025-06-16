@@ -24,17 +24,17 @@ class ErrorPreventionSystem {
     }
 
     this.monitoring = true;
-    console.log('🛡️ Error Prevention System started');
+    console.log('🛡️ Error Prevention System started (single instance)');
 
     this.setupHydrationMonitor();
     this.setupRealtimeMonitor();
     this.setupPerformanceMonitor();
     this.setupNetworkMonitor();
 
-    // Report summary every 5 minutes (reduced from 30s for dev comfort)
+    // Report summary every 10 minutes (optimized for dev comfort)
     this.reportInterval = setInterval(() => {
       this.generateReport();
-    }, 300000); // 5 minutes
+    }, 600000); // 10 minutes
   }
 
   // Monitor hydration mismatches
@@ -200,6 +200,7 @@ class ErrorPreventionSystem {
     if (this.reportInterval) {
       clearInterval(this.reportInterval);
       this.reportInterval = null;
+      console.debug('🛡️ Error Prevention System cleanup completed');
     }
     
     console.log('🛡️ Error Prevention System stopped');

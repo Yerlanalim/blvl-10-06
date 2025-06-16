@@ -96,38 +96,44 @@ export interface AnalyticsEvent {
   };
 }
 
+// Performance metrics types
+export type CoreWebVitals = {
+  fcp: number; // First Contentful Paint
+  lcp: number; // Largest Contentful Paint
+  fid: number; // First Input Delay
+  cls: number; // Cumulative Layout Shift
+  ttfb: number; // Time to First Byte
+};
+
+export type ApiPerformance = {
+  endpoint: string;
+  method: string;
+  response_time_ms: number;
+  status_code: number;
+  error?: string;
+};
+
+export type DatabasePerformance = {
+  query_type: string;
+  table_name: string;
+  execution_time_ms: number;
+  rows_affected: number;
+};
+
+export type ClientError = {
+  error_message: string;
+  error_stack?: string;
+  component_name?: string;
+  user_agent: string;
+  page_url: string;
+};
+
 // Performance metrics interface
 export interface PerformanceMetrics {
-  core_web_vitals: {
-    fcp: number; // First Contentful Paint
-    lcp: number; // Largest Contentful Paint
-    fid: number; // First Input Delay
-    cls: number; // Cumulative Layout Shift
-    ttfb: number; // Time to First Byte
-  };
-  
-  api_performance: {
-    endpoint: string;
-    method: string;
-    response_time_ms: number;
-    status_code: number;
-    error?: string;
-  };
-  
-  database_performance: {
-    query_type: string;
-    table_name: string;
-    execution_time_ms: number;
-    rows_affected: number;
-  };
-  
-  client_error: {
-    error_message: string;
-    error_stack?: string;
-    component_name?: string;
-    user_agent: string;
-    page_url: string;
-  };
+  core_web_vitals: CoreWebVitals;
+  api_performance: ApiPerformance;
+  database_performance: DatabasePerformance;
+  client_error: ClientError;
 }
 
 // Session tracking
@@ -233,12 +239,10 @@ class Analytics {
   }
 
   // Track performance metrics
-  trackPerformance(metrics: PerformanceMetrics[keyof PerformanceMetrics], type: keyof PerformanceMetrics) {
+  trackPerformance<T extends keyof PerformanceMetrics>(metrics: PerformanceMetrics[T], type: T) {
     try {
-      track(`performance_${type}`, {
-        ...metrics,
-        timestamp: new Date().toISOString()
-      });
+      // Use any to bypass Vercel Analytics type restrictions for complex objects
+      track(`performance_${type}` as any, metrics as any);
     } catch (error) {
       console.error('[Analytics] Error tracking performance:', error);
     }
@@ -261,15 +265,13 @@ class Analytics {
       new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (entry.name === 'first-contentful-paint') {
-                         this.trackPerformance({
-               core_web_vitals: {
-                 fcp: entry.startTime,
-                 lcp: 0, // Will be updated
-                 fid: 0, // Will be updated
-                 cls: 0, // Will be updated
-                 ttfb: 0 // Will be updated
-               }
-             }, 'core_web_vitals');
+            this.trackPerformance({
+              fcp: entry.startTime,
+              lcp: 0, // Will be updated
+              fid: 0, // Will be updated
+              cls: 0, // Will be updated
+              ttfb: 0 // Will be updated
+            }, 'core_web_vitals');
           }
         }
       }).observe({ entryTypes: ['paint'] });
@@ -279,13 +281,11 @@ class Analytics {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         this.trackPerformance({
-          core_web_vitals: {
-            fcp: 0,
-            lcp: lastEntry.startTime,
-            fid: 0,
-            cls: 0,
-            ttfb: 0
-          }
+          fcp: 0,
+          lcp: lastEntry.startTime,
+          fid: 0,
+          cls: 0,
+          ttfb: 0
         }, 'core_web_vitals');
       }).observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -305,34 +305,30 @@ class Analytics {
         const response = await originalFetch(...args);
         const end = performance.now();
         
-        const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
         
         // Only track API calls to our backend
         if (url.startsWith('/api/')) {
           this.trackPerformance({
-            api_performance: {
-              endpoint: url,
-              method: (args[1]?.method || 'GET').toUpperCase(),
-              response_time_ms: Math.round(end - start),
-              status_code: response.status
-            }
+            endpoint: url,
+            method: (args[1]?.method || 'GET').toUpperCase(),
+            response_time_ms: Math.round(end - start),
+            status_code: response.status
           }, 'api_performance');
         }
         
         return response;
       } catch (error) {
         const end = performance.now();
-        const url = typeof args[0] === 'string' ? args[0] : args[0].url;
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
         
         if (url.startsWith('/api/')) {
           this.trackPerformance({
-            api_performance: {
-              endpoint: url,
-              method: (args[1]?.method || 'GET').toUpperCase(),
-              response_time_ms: Math.round(end - start),
-              status_code: 0,
-              error: error instanceof Error ? error.message : 'Unknown error'
-            }
+            endpoint: url,
+            method: (args[1]?.method || 'GET').toUpperCase(),
+            response_time_ms: Math.round(end - start),
+            status_code: 0,
+            error: error instanceof Error ? error.message : 'Unknown error'
           }, 'api_performance');
         }
         
@@ -478,13 +474,11 @@ export const trackPricingViewed = (
 // Track errors
 export const trackError = (error: Error, componentName?: string) => {
   analytics.trackPerformance({
-    client_error: {
-      error_message: error.message,
-      error_stack: error.stack,
-      component_name: componentName,
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-      page_url: typeof window !== 'undefined' ? window.location.href : 'unknown'
-    }
+    error_message: error.message,
+    error_stack: error.stack,
+    component_name: componentName,
+    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+    page_url: typeof window !== 'undefined' ? window.location.href : 'unknown'
   }, 'client_error');
 };
 
