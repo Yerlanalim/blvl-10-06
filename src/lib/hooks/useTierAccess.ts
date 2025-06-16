@@ -144,8 +144,16 @@ export function useTierAccess(userId?: string): TierAccessResult {
     // Set up realtime subscription using centralized manager with proper cleanup
     const subscriberId = `useTierAccess-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     let cleanup: (() => void) | null = null;
+    let isSetupInProgress = false;
     
     const setupSubscription = async () => {
+      if (isSetupInProgress) {
+        console.debug('useTierAccess: subscription setup already in progress, skipping');
+        return;
+      }
+      
+      isSetupInProgress = true;
+      
       try {
         // Delay subscription setup to avoid conflicts during rapid component mounts
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -174,6 +182,8 @@ export function useTierAccess(userId?: string): TierAccessResult {
       } catch (error) {
         console.debug('useTierAccess: subscription setup failed (non-critical):', error);
         // Non-critical error - app continues to work without realtime updates
+      } finally {
+        isSetupInProgress = false;
       }
     };
 

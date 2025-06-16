@@ -17,29 +17,26 @@ export default function LevelsPage() {
   const searchParams = useSearchParams();
   const [levels, setLevels] = useState<Tables<'levels'>[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Get hooks data with better error handling
   const { userProgress, loading: progressLoading, error: progressError } = useUserProgress(user?.id);
   const { tierType, maxLevels, loading: tierLoading, error: tierError } = useTierAccess(user?.id);
 
-  // Combined loading state with minimum time to prevent flash
-  const [minLoadingTime, setMinLoadingTime] = useState(true);
-  const isLoading = useMemo(() => {
-    return !isClient || progressLoading || tierLoading || minLoadingTime || !user;
-  }, [isClient, progressLoading, tierLoading, minLoadingTime, user]);
-
-  // Set minimum loading time and client state
+  // Set mounted state only once
   useEffect(() => {
-    setIsClient(true);
-    const timer = setTimeout(() => setMinLoadingTime(false), 300);
-    return () => clearTimeout(timer);
+    setMounted(true);
   }, []);
+
+  // Combined loading state
+  const isLoading = useMemo(() => {
+    return !mounted || progressLoading || tierLoading || !user;
+  }, [mounted, progressLoading, tierLoading, user]);
 
   // Load levels data with enhanced error handling
   useEffect(() => {
     const loadLevels = async () => {
-      if (!isClient || !user) {
+      if (!mounted || !user) {
         return;
       }
 
@@ -93,7 +90,7 @@ export default function LevelsPage() {
     };
 
     loadLevels();
-  }, [isClient, user]);
+  }, [mounted, user]);
 
   // Memoized computed values for performance
   const { completedLevels, currentLevel, stats } = useMemo(() => {
@@ -156,7 +153,7 @@ export default function LevelsPage() {
                       progressError,
                       tierError,
                       user: user?.id,
-                      isClient,
+                      mounted,
                       timestamp: new Date().toISOString()
                     }, null, 2)}
                   </pre>

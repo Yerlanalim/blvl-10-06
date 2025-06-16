@@ -1,27 +1,14 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Check, Crown, BookOpen, MessageCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { trackPricingViewed, trackUpgradeClicked } from '@/lib/analytics';
 
 const HomePricing = () => {
-    const [isClient, setIsClient] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
-
-    // Ensure we're on client side to prevent hydration mismatch
     useEffect(() => {
-        setIsMounted(true);
-        // Small delay to ensure DOM is fully stable
-        const timer = setTimeout(() => setIsClient(true), 100);
-        return () => clearTimeout(timer);
+        trackPricingViewed('direct', 'free');
     }, []);
-
-    useEffect(() => {
-        if (isClient && isMounted) {
-            trackPricingViewed('direct', 'free');
-        }
-    }, [isClient, isMounted]);
 
     const handleUpgradeClick = (tierName: string) => {
         if (tierName === 'Premium') {
@@ -62,71 +49,62 @@ const HomePricing = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
-                    <p className="text-gray-600 text-lg" suppressHydrationWarning>
+                    <p className="text-gray-600 text-lg">
                         Choose the plan that fits your learning journey
                     </p>
                 </div>
 
-                <div className="relative grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto" suppressHydrationWarning>
-                    {/* Loading skeleton - always rendered but hidden when client loads */}
-                    <div className={`absolute inset-0 grid md:grid-cols-2 gap-8 transition-opacity duration-300 ${isClient && isMounted ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                        <div className="h-96 bg-white rounded-lg border animate-pulse" />
-                        <div className="h-96 bg-white rounded-lg border animate-pulse" />
-                    </div>
-                    
-                    {/* Actual content - always rendered but hidden until client loads */}
-                    <div className={`transition-opacity duration-300 ${isClient && isMounted ? 'opacity-100' : 'opacity-0'} contents`} suppressHydrationWarning>
-                        {tiers.map((tier) => (
-                            <Card
-                                key={tier.name}
-                                className={`relative flex flex-col ${
-                                    tier.popular ? 'border-green-500 shadow-lg' : 'border-gray-200'
-                                }`}
-                            >
-                                {tier.popular && (
-                                    <div className="absolute top-0 right-0 -translate-y-1/2 px-3 py-1 bg-green-500 text-white text-sm rounded-full">
-                                        Most Popular
-                                    </div>
-                                )}
+                <div className="grid md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+                    {tiers.map((tier) => (
+                        <Card
+                            key={tier.name}
+                            className={`relative flex flex-col ${
+                                tier.popular ? 'border-green-500 shadow-lg' : 'border-gray-200'
+                            }`}
+                        >
+                            {tier.popular && (
+                                <div className="absolute top-0 right-0 -translate-y-1/2 px-3 py-1 bg-green-500 text-white text-sm rounded-full">
+                                    Most Popular
+                                </div>
+                            )}
 
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Crown className={`h-5 w-5 ${tier.name === 'Premium' ? 'text-yellow-500' : 'text-gray-400'}`} />
-                                        <span>{tier.name}</span>
-                                    </CardTitle>
-                                    <CardDescription>{tier.description}</CardDescription>
-                                </CardHeader>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Crown className={`h-5 w-5 ${tier.name === 'Premium' ? 'text-yellow-500' : 'text-gray-400'}`} />
+                                    <span>{tier.name}</span>
+                                </CardTitle>
+                                <CardDescription>{tier.description}</CardDescription>
+                            </CardHeader>
 
-                                <CardContent className="flex-grow flex flex-col">
-                                    <div className="mb-6">
-                                        <span className="text-4xl font-bold">${tier.price}</span>
-                                        <span className="text-gray-600 ml-2">/month</span>
-                                    </div>
+                            <CardContent className="flex-grow flex flex-col">
+                                <div className="mb-6">
+                                    <span className="text-4xl font-bold">${tier.price}</span>
+                                    <span className="text-gray-600 ml-2">/month</span>
+                                </div>
 
-                                    <ul className="space-y-3 mb-8 flex-grow">
-                                        {tier.features.map((feature) => (
-                                            <li key={feature} className="flex items-start gap-2">
-                                                <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                                                <span className="text-gray-600">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                <ul className="space-y-3 mb-8 flex-grow">
+                                    {tier.features.map((feature) => (
+                                        <li key={feature} className="flex items-start gap-2">
+                                            <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                                            <span className="text-gray-600">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
 
-                                    <Link
-                                        href="/auth/register"
-                                        onClick={() => handleUpgradeClick(tier.name)}
-                                        className={`w-full text-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                                            tier.popular
-                                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
-                                    >
-                                        Start Learning
-                                    </Link>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                                <Link
+                                    href="/auth/register"
+                                    onClick={() => handleUpgradeClick(tier.name)}
+                                    className={`w-full text-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                                        tier.popular
+                                            ? 'bg-green-600 text-white hover:bg-green-700'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                >
+                                    Start Learning
+                                </Link>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
 
                 <div className="text-center">
@@ -137,10 +115,10 @@ const HomePricing = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <MessageCircle className="h-5 w-5 text-green-500" />
-                            <span>AI Assistant &quot;Leo&quot;</span>
+                            <span>AI Assistant "Leo"</span>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-500" suppressHydrationWarning>
+                    <p className="text-sm text-gray-500">
                         <span className="mr-1" aria-label="rocket">🚀</span>
                         Start with Free plan, upgrade anytime to unlock all levels
                     </p>
