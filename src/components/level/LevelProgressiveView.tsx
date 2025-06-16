@@ -163,6 +163,7 @@ export default function LevelProgressiveView({
   };
 
   const getBlockState = (blockIndex: number): 'locked' | 'active' | 'completed' => {
+    // В прогрессивном UX все блоки всегда показываются, но с разными состояниями
     // Блок 0 - заголовок, блоки 1-N - шаги, блок N+1 - completion
     if (blockIndex === 0) {
       // Заголовок всегда активен для просмотра
@@ -171,7 +172,7 @@ export default function LevelProgressiveView({
     
     if (blockIndex === lessonSteps.length + 1) {
       // Completion блок
-      return isCompleted ? 'active' : 'locked';
+      return isCompleted ? 'active' : 'active'; // Всегда показываем
     }
     
     // Обычные шаги (blockIndex 1-N соответствуют stepIndex 0-(N-1))
@@ -179,7 +180,7 @@ export default function LevelProgressiveView({
     
     if (stepProgress[stepIndex]) return 'completed';
     if (unlockedBlocks.includes(blockIndex)) return 'active';
-    return 'locked';
+    return 'active'; // В прогрессивном UX все блоки активны, но могут быть неинтерактивны
   };
 
   // Обновление прогресса (копируем из LessonContainer)

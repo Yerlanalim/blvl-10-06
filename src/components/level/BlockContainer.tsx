@@ -107,10 +107,16 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
 
   const getContentStyles = () => {
     if (state === 'locked') {
-      return 'pointer-events-none select-none opacity-50';
+      return 'pointer-events-none select-none opacity-60';
+    }
+    if (!isUnlocked) {
+      return 'pointer-events-none select-none opacity-60';
     }
     return '';
   };
+
+  // Проверяем, разблокирован ли блок для интерактивности
+  const isUnlocked = state === 'active' || state === 'completed';
 
   const getAnimationClass = () => {
     if (!hasAppeared && state !== 'locked') {

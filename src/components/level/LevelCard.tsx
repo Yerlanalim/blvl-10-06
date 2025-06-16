@@ -88,7 +88,8 @@ const LevelCard: React.FC<LevelCardProps> = ({
     return 'bg-blue-600 hover:bg-blue-700 text-white';
   };
 
-  const canClick = !isLocked && !tierRestriction;
+  // Завершенные уровни всегда доступны для просмотра
+  const canClick = (!isLocked && !tierRestriction) || isCompleted;
 
   return (
     <Card className={`relative flex flex-col h-full ${cardStyles}`}>

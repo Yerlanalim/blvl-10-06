@@ -20,12 +20,16 @@ class ErrorPreventionSystem {
     if (process.env.NODE_ENV !== 'development') return;
     
     if (this.monitoring) {
-      console.debug('🛡️ Error Prevention System already running');
-      return;
+      return; // Убираем лишний лог
     }
 
     this.monitoring = true;
-    console.log('🛡️ Error Prevention System started (single instance)');
+    
+    // Только один лог на весь процесс
+    if (!global.__errorPreventionStarted) {
+      console.log('🛡️ Error Prevention System started');
+      global.__errorPreventionStarted = true;
+    }
 
     this.setupHydrationMonitor();
     this.setupRealtimeMonitor();

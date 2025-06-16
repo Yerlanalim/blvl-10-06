@@ -31,7 +31,10 @@ class RealtimePerformanceMonitor {
     if (this.monitoring) return;
     
     this.monitoring = true;
-    console.debug('🔍 Realtime Performance Monitor started');
+    if (!global.__realtimeMonitorStarted) {
+      console.log('🔍 Realtime Performance Monitor started');
+      global.__realtimeMonitorStarted = true;
+    }
 
     // Performance reporting every 2 minutes in development
     if (process.env.NODE_ENV === 'development') {
