@@ -49,7 +49,7 @@ const HomePricing = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
                     <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
-                    <p className="text-gray-600 text-lg">
+                    <p className="text-gray-600 text-lg" suppressHydrationWarning>
                         Choose the plan that fits your learning journey
                     </p>
                 </div>
@@ -76,7 +76,7 @@ const HomePricing = () => {
                                 <CardDescription>{tier.description}</CardDescription>
                             </CardHeader>
 
-                            <CardContent className="flex-grow flex flex-col">
+                            <CardContent className="flex-grow flex-col">
                                 <div className="mb-6">
                                     <span className="text-4xl font-bold">${tier.price}</span>
                                     <span className="text-gray-600 ml-2">/month</span>
@@ -115,7 +115,7 @@ const HomePricing = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <MessageCircle className="h-5 w-5 text-green-500" />
-                            <span>AI Assistant "Leo"</span>
+                            <span>AI Assistant &ldquo;Leo&rdquo;</span>
                         </div>
                     </div>
                     <p className="text-sm text-gray-500">

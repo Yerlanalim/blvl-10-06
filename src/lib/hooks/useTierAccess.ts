@@ -141,22 +141,35 @@ export function useTierAccess(userId?: string): TierAccessResult {
 
     loadAccessData();
 
-    // Set up realtime subscription using centralized manager with proper cleanup
+    // Set up realtime subscription using centralized manager with enhanced protection
     const subscriberId = `useTierAccess-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     let cleanup: (() => void) | null = null;
     let isSetupInProgress = false;
+    let isComponentMounted = true;
     
-    const setupSubscription = async () => {
+    const setupRealtimeSubscription = async () => {
+      // Multiple protection layers to prevent duplicate subscriptions
       if (isSetupInProgress) {
         console.debug('useTierAccess: subscription setup already in progress, skipping');
+        return;
+      }
+      
+      if (!isComponentMounted) {
+        console.debug('useTierAccess: component unmounted, skipping subscription setup');
         return;
       }
       
       isSetupInProgress = true;
       
       try {
-        // Delay subscription setup to avoid conflicts during rapid component mounts
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Staggered delay to prevent racing conditions during rapid component mounts
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100));
+        
+        // Double-check component is still mounted after delay
+        if (!isComponentMounted) {
+          console.debug('useTierAccess: component unmounted during setup delay, aborting');
+          return;
+        }
 
         const unsubscribe = await realtimeManager.subscribe(
           userId,
@@ -165,33 +178,55 @@ export function useTierAccess(userId?: string): TierAccessResult {
             event: 'UPDATE',
             filter: `user_id=eq.${userId}`,
             callback: () => {
-              // Debounce the callback to prevent rapid updates
-              setTimeout(loadAccessData, 200);
+              // Ensure component is still mounted before triggering updates
+              if (isComponentMounted) {
+                // Debounced callback to prevent rapid-fire updates
+                setTimeout(() => {
+                  if (isComponentMounted) {
+                    loadAccessData();
+                  }
+                }, 250);
+              }
             }
           },
           subscriberId
         );
 
-        cleanup = () => {
+        // Only set cleanup if component is still mounted
+        if (isComponentMounted) {
+          cleanup = () => {
+            try {
+              unsubscribe();
+              console.debug('useTierAccess: realtime subscription cleaned up successfully');
+            } catch (err) {
+              console.debug('useTierAccess: cleanup error (non-critical):', err);
+            }
+          };
+        } else {
+          // Immediate cleanup if component was unmounted during setup
           try {
             unsubscribe();
           } catch (err) {
-            console.debug('useTierAccess: cleanup error (non-critical):', err);
+            console.debug('useTierAccess: immediate cleanup error (non-critical):', err);
           }
-        };
+        }
       } catch (error) {
-        console.debug('useTierAccess: subscription setup failed (non-critical):', error);
+        console.warn('useTierAccess: Realtime subscription error', error);
         // Non-critical error - app continues to work without realtime updates
       } finally {
         isSetupInProgress = false;
       }
     };
 
-    setupSubscription();
+    // Start subscription setup
+    setupRealtimeSubscription();
 
+    // Enhanced cleanup function
     return () => {
+      isComponentMounted = false;
       if (cleanup) {
         cleanup();
+        cleanup = null;
       }
     };
   }, [userId, loadAccessData]);
