@@ -13,6 +13,7 @@ class ErrorPreventionSystem {
   private errors: ErrorReport[] = [];
   private monitoring = false;
   private reportInterval: NodeJS.Timeout | null = null;
+  private lastReportTime: number = 0;
 
   // Start monitoring for development
   startMonitoring() {
@@ -204,6 +205,16 @@ class ErrorPreventionSystem {
     }
     
     console.log('🛡️ Error Prevention System stopped');
+  }
+
+  // Only report every 30 minutes
+  private shouldReport(): boolean {
+    const now = Date.now();
+    if (now - this.lastReportTime < 30 * 60 * 1000) { // 30 minutes
+      return false;
+    }
+    this.lastReportTime = now;
+    return true;
   }
 }
 
