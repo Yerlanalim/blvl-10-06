@@ -39,7 +39,7 @@ Integration Points
 
 ```bash
 # Required for email sending
-RESEND_API_KEY=re_xxxxxxxxx
+RESEND_API_KEY=re_[your_resend_api_key]
 
 # Required for cron job authentication
 CRON_SECRET=bizlevel_cron_secret_2025
