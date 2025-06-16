@@ -144,18 +144,30 @@ const LevelCard: React.FC<LevelCardProps> = ({
           </div>
         )}
 
-        {/* Action button */}
-        <Link
-          href={canClick ? `/app/lesson/${level.id}` : '#'}
-          onClick={handleClick}
-          className={`
-            w-full px-4 py-2 rounded-lg font-medium text-center transition-colors
-            ${getButtonVariant()}
-            ${!canClick ? 'pointer-events-none' : ''}
-          `}
-        >
-          {getButtonText()}
-        </Link>
+        {/* Action buttons */}
+        {canClick ? (
+          <Link
+            href={`/app/level/${level.id}`}
+            onClick={handleClick}
+            className={`
+              w-full px-4 py-2 rounded-lg font-medium text-center transition-colors block
+              ${getButtonVariant()}
+            `}
+          >
+            {getButtonText()}
+          </Link>
+        ) : (
+          <button
+            onClick={handleClick}
+            className={`
+              w-full px-4 py-2 rounded-lg font-medium text-center transition-colors
+              ${getButtonVariant()}
+              ${!canClick ? 'pointer-events-none' : ''}
+            `}
+          >
+            {getButtonText()}
+          </button>
+        )}
 
         {/* Upgrade hint */}
         {tierRestriction && upgradeHint && (

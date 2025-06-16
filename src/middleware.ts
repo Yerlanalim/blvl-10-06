@@ -128,11 +128,11 @@ export async function middleware(request: NextRequest) {
     cleanupCache();
   }
 
-  // Handle lesson access protection
-  if (request.nextUrl.pathname.startsWith('/app/lesson/')) {
+  // Handle lesson and level access protection
+  if (request.nextUrl.pathname.startsWith('/app/lesson/') || request.nextUrl.pathname.startsWith('/app/level/')) {
     // Extract level ID from URL
     const pathSegments = request.nextUrl.pathname.split('/');
-    const levelIdStr = pathSegments[3]; // /app/lesson/[id]
+    const levelIdStr = pathSegments[3]; // /app/lesson/[id] or /app/level/[id]
     const levelId = parseInt(levelIdStr);
 
     if (!isNaN(levelId)) {

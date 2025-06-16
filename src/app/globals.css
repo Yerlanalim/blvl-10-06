@@ -341,3 +341,19 @@
     @apply bg-background text-foreground;
     }
 }
+
+/* Custom animations for BlockContainer */
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideInFromBottom {
+  animation: slideInFromBottom 0.5s ease-out;
+}

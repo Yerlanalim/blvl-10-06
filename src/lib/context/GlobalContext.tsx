@@ -37,7 +37,8 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
                         registered_at: new Date(user.created_at)
                     });
                 } else {
-                    throw new Error('User not found');
+                    // Пользователь не авторизован - это нормально для публичных страниц
+                    setUser(null);
                 }
 
             } catch (error) {
